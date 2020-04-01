@@ -2,7 +2,7 @@
 [Challenge description](https://pacechallenge.org/2020/td/)
 
 # TestCase
-exact, heuristicを含め、すべてのテストケースは `data/` 以下にあります。
+exact, heuristicを含め、公開されているテストケースは `data/` 以下にあります。
 自分でランダムグラフなどのケースを追加してもらっても構いません。
 
 exactのデータについては [公式サイト](https://pacechallenge.org/2020/visualize.html) にビジュアライズされています。
