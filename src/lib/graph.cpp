@@ -149,6 +149,7 @@ Graph merge_subtrees(int root, const vector<Graph>& subtrees) {
 // treedepth decomposition を出力する
 void print_decomp(const Graph& decomp) {
     assert(decomp.m == decomp.n - 1);
+    cout << depth(decomp) << endl;
     vector<int> par(decomp.n);
     auto dfs = [&](auto& dfs, int v, int p) -> void {
         if (p == -1) {
