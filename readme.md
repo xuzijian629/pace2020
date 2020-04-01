@@ -35,6 +35,29 @@ p_i はノード i の親です。 i が根の場合は代わりに 0 を出力�
 * プログラムは `src/` 以下のディレクトリに自由な形で記載することができますが、 `src/build.sh` を実行したときに、実行ファイル `src/main` が生成されるようにしてください。
 
 # ベンチマーク
+* [Docker](https://docs.docker.com/docker-for-mac/install/)を使用します。
 * `benchmark/run.sh` を実行すると、 `benchmark/config.sh` の内容に従って各テストケースを実行します。
 * 実行結果は `solutions/` 以下に保存されます。
 * 既存の解よりもよい解が求まった場合、 `solutions/best/` 以下が更新されます。
+
+## 実行例
+
+```
+$ ./benchmark/run.sh
+building cpp files
+testing case exact_001.gr
+[AC] treedepth=6
+testing case exact_003.gr
+[AC] treedepth=11
+testing case exact_005.gr
+[AC] treedepth=5
+testing case exact_007.gr
+[TLE]
+testing case exact_009.gr
+[AC] treedepth=6
+testing case exact_011.gr
+[AC] treedepth=5
+testing case exact_013.gr
+[TLE]
+...
+```
