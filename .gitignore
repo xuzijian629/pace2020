@@ -1,4 +1,7 @@
 .vscode/
 a.out
 main
+verify
 tempCodeRunnerFile.cpp
+solutions/*
+!solutions/best/
