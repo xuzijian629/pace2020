@@ -7,7 +7,7 @@ source $base_dir/benchmark/config.sh
 
 instance=$(basename $1)
 input_file=$base_dir/data/$DATA_CATEGORY/$instance
-best_file=$base_dir/solutions/best/${instance//.gr/.sol}
+best_file=$base_dir/solutions/best/$DATA_CATEGORY/${instance//.gr/.sol}
 output_file=$base_dir/solutions/$2/${instance//.gr/.sol}
 
 verify=$base_dir/benchmark/scripts/verify
