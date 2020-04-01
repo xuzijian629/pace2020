@@ -3,7 +3,7 @@
 
 # TestCase
 exact, heuristicを含め、公開されているテストケースは `data/` 以下にあります。
-自分でランダムグラフなどのケースを追加してもらっても構いません。
+独自のケースを追加してもらっても構いません。
 
 exactのデータについては [公式サイト](https://pacechallenge.org/2020/visualize.html) にビジュアライズされています。
 
@@ -37,6 +37,7 @@ p_i はノード i の親です。 i が根の場合は代わりに 0 を出力�
 # ベンチマーク
 * [Docker](https://docs.docker.com/docker-for-mac/install/)を使用します。
 * `benchmark/run.sh` を実行すると、 `benchmark/config.sh` の内容に従って各テストケースを実行します。
+* `data/rand` 以下に、頂点サイズが 15 以下のランダムグラフデータが入っています。 `DATA_CATEGORY=rand` とした場合にすべてのケースで正答することを確認してからベンチマークを実行することを推奨します。
 * 実行結果は `solutions/` 以下に保存されます。
 * 既存の解よりもよい解が求まった場合、 `solutions/best/` 以下が更新されます。
 
