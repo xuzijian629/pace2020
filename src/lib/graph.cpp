@@ -143,3 +143,8 @@ vector<Graph> components(const Graph& g) {
     }
     return ret;
 }
+
+bool is_adjacent(const Graph& g, int u, int v) {
+    assert(g.nodes.count(u) && g.nodes.count(v));
+    return g.adj.at(u).count(v);
+}
