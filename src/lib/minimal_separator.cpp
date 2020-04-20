@@ -38,6 +38,12 @@ unordered_set<int> intersection(const unordered_set<int>& A, const unordered_set
     return ret;
 }
 
+unordered_set<int> join(const unordered_set<int>& A, const unordered_set<int>& B) {
+    unordered_set<int> ret(A);
+    for (int b : B) ret.insert(b);
+    return ret;
+}
+
 // A \ B
 unordered_set<int> difference(const unordered_set<int>& A, const unordered_set<int>& B) {
     unordered_set<int> ret(A);
@@ -56,7 +62,7 @@ int min_fill_vertex(const Graph& g) {
     int nin = 1e9;
     int ret = -1;
     for (int v : g.nodes) {
-        auto X = close_neighbors(g, v);
+        auto X = open_neighbors(g, v);
         int cnt = 0;
         for (int a : X) {
             for (int b : X) {
@@ -89,19 +95,21 @@ bool is_subset(const unordered_set<int>& a, const unordered_set<int>& b) {
     return true;
 }
 
-unordered_set<int> get_close_sep(const Graph& g, const unordered_set<int>& A, int b, int v) {
+unordered_set<int> compute_A_(const Graph& g, const unordered_set<int>& A, int b, int v) {
     unordered_set<int> C(A);
     C.insert(v);
     for (auto& conn : components(remove(g, close_neighbors(g, C)))) {
         if (conn.nodes.count(b)) {
             auto N = open_neighbors(g, conn.nodes);
+            // N is minimal C-b separator close to C
             for (auto& A_ : components(remove(g, N))) {
                 if (A_.nodes.count(v)) return A_.nodes;
             }
+            assert(false);
         }
     }
     // not-found (for example, when b and v are connected)
-    return unordered_set<int>();
+    return {};
 }
 
 vector<unordered_set<int>> unique(const vector<unordered_set<int>>& cs) {
@@ -120,9 +128,8 @@ vector<unordered_set<int>> unique(const vector<unordered_set<int>>& cs) {
 
 vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const unordered_set<int>& A,
                                     const unordered_set<int>& F) {
-    vector<unordered_set<int>> ret;
-    if (F.size() > k) return ret;
-    if (a != get_min(A)) return ret;
+    if (F.size() > k) return {};
+    if (a != get_min(A)) return {};
     unordered_set<int> Cb;
     for (auto& conn : components(remove(g, close_neighbors(g, A)))) {
         if (conn.nodes.count(b)) {
@@ -131,29 +138,29 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
         }
     }
     assert(!Cb.empty());
-    if (b != get_min(Cb)) return ret;
-    if (!is_subset(F, open_neighbors(g, Cb))) return ret;
+    if (b != get_min(Cb)) return {};
+    if (!is_subset(F, open_neighbors(g, Cb))) return {};
     auto Na = open_neighbors(g, A);
-    if (F.size() == k && Na != F) return ret;
-    if (A.size() > Cb.size()) return ret;
-    if (Na.size() > k && A.size() + (Na.size() - k) > min((int)Cb.size(), (g.n - k) / 2)) return ret;
+    if (F.size() == k && Na != F) return {};
+    if (A.size() > Cb.size()) return {};
+    if (Na.size() > k && A.size() + (Na.size() - k) > min((int)Cb.size(), (g.n - k) / 2)) return {};
     // Lemma 4 による枝刈りは未追加
 
     // F.size() == k は論文の誤植？スライドは F.size() <= k になっている
     if (F.size() <= k && Na == F && open_neighbors(g, Cb) == F && A.size() <= Cb.size()) {
-        ret.push_back(Na);
-        return ret;
+        return {Na};
     }
 
     auto dif = difference(Na, F);
-    if (dif.empty()) return ret;
+    if (dif.empty()) return {};
+    vector<unordered_set<int>> ret;
     for (int v : dif) {
         auto F_(F);
         F_.insert(v);
         for (auto& s : enum_rec(g, k, a, b, A, F_)) {
             ret.push_back(s);
         }
-        auto A_ = get_close_sep(g, A, b, v);
+        auto A_ = compute_A_(g, A, b, v);
         if (A_.empty()) continue;
         for (auto& s : enum_rec(g, k, a, b, A_, F)) {
             ret.push_back(s);
@@ -162,17 +169,20 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
     return unique(ret);
 }
 
-Graph local(const Graph& g, Graph C) {
-    for (auto& D : components(remove(g, C.nodes))) {
+Graph local(const Graph& g, const unordered_set<int>& C) {
+    Graph ret = induced(g, C);
+    for (auto& D : components(remove(g, C))) {
         auto N = open_neighbors(g, D.nodes);
         for (int a : N) {
             for (int b : N) {
-                if (a == b) continue;
-                C.add_edge(a, b);
+                assert(C.count(a) && C.count(b));
+                if (a < b) {
+                    ret.add_edge(a, b);
+                }
             }
         }
     }
-    return C;
+    return ret;
 }
 
 vector<unordered_set<int>> list_exact_slow(const Graph& g, int k) {
@@ -182,8 +192,7 @@ vector<unordered_set<int>> list_exact_slow(const Graph& g, int k) {
             if (a == b) continue;
             // a と b の順序は重要
             if (!is_adjacent(g, a, b)) {
-                unordered_set<int> A, F;
-                A.insert(a);
+                unordered_set<int> A = {a}, F;
                 auto Na = open_neighbors(g, a);
                 auto Nb = open_neighbors(g, b);
                 F = intersection(Na, Nb);
@@ -200,15 +209,13 @@ vector<unordered_set<int>> list_exact_slow(const Graph& g, int k) {
 vector<unordered_set<int>> list_exact(const Graph& g, int k) {
     vector<unordered_set<int>> ret;
     int v = min_fill_vertex(g);
-    unordered_set<int> X = close_neighbors(g, v);
-    // X は separator でなくてもよい？
+    unordered_set<int> X = open_neighbors(g, v);
     for (int a : X) {
         for (int b : X) {
             if (a == b) continue;
             // a と b の順序は重要
             if (!is_adjacent(g, a, b)) {
-                unordered_set<int> A, F;
-                A.insert(a);
+                unordered_set<int> A = {a}, F;
                 auto Na = open_neighbors(g, a);
                 auto Nb = open_neighbors(g, b);
                 F = intersection(Na, Nb);
@@ -220,7 +227,8 @@ vector<unordered_set<int>> list_exact(const Graph& g, int k) {
     }
 
     for (auto& conn : components(remove(g, X))) {
-        for (auto& s : list_exact(local(g, conn), k)) {
+        if (conn.nodes.count(v)) continue;
+        for (auto& s : list_exact(local(g, join(conn.nodes, X)), k)) {
             ret.push_back(s);
         }
     }

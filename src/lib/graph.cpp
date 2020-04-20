@@ -16,6 +16,7 @@ struct Graph {
             adj[v];
             nodes.insert(v);
         }
+        assert(n == nodes.size());
     }
     void add_edge(int a, int b) {
         add_node(a);
@@ -35,9 +36,10 @@ struct Graph {
         }
         adj.erase(v);
         nodes.erase(v);
+        assert(n == nodes.size());
     }
     void remove_edge(int a, int b) {
-        assert(adj[a].count(b) && adj[b].count(a));
+        assert(adj.at(a).count(b) && adj.at(b).count(a));
         adj[a].erase(b);
         adj[b].erase(a);
         m--;
@@ -121,7 +123,7 @@ void merge(Graph& g1, Graph& g2, int u, int v) {
 
 vector<Graph> components(const Graph& g) {
     int color_cnt = 0;
-    unordered_map<int, int> color(g.n);
+    unordered_map<int, int> color;
     auto dfs = [&](auto& dfs, int v, int c) -> void {
         color[v] = c;
         for (auto& s : g.adj.at(v)) {
@@ -147,4 +149,17 @@ vector<Graph> components(const Graph& g) {
 bool is_adjacent(const Graph& g, int u, int v) {
     assert(g.nodes.count(u) && g.nodes.count(v));
     return g.adj.at(u).count(v);
+}
+
+Graph induced(const Graph& g, const unordered_set<int>& S) {
+    Graph ret;
+    for (int a : S) ret.add_node(a);
+    for (int a : g.nodes) {
+        for (int b : g.adj.at(a)) {
+            if (a < b && S.count(a) && S.count(b)) {
+                ret.add_edge(a, b);
+            }
+        }
+    }
+    return ret;
 }
