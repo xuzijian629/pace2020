@@ -127,9 +127,9 @@ vector<unordered_set<int>> unique(const vector<unordered_set<int>>& cs) {
 }
 
 vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const unordered_set<int>& A,
-                                    const unordered_set<int>& F) {
+                                    const unordered_set<int>& F, bool prune = true) {
     if (F.size() > k) return {};
-    if (a != get_min(A)) return {};
+    if (prune && a != get_min(A)) return {};
     unordered_set<int> Cb;
     for (auto& conn : components(remove(g, close_neighbors(g, A)))) {
         if (conn.nodes.count(b)) {
@@ -138,16 +138,16 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
         }
     }
     assert(!Cb.empty());
-    if (b != get_min(Cb)) return {};
+    if (prune && b != get_min(Cb)) return {};
     if (!is_subset(F, open_neighbors(g, Cb))) return {};
     auto Na = open_neighbors(g, A);
     if (F.size() == k && Na != F) return {};
-    if (A.size() > Cb.size()) return {};
+    if (prune && A.size() > Cb.size()) return {};
     if (Na.size() > k && A.size() + (Na.size() - k) > min((int)Cb.size(), (g.n - k) / 2)) return {};
     // Lemma 4 による枝刈りは未追加
 
     // F.size() == k は論文の誤植？スライドは F.size() <= k になっている
-    if (F.size() <= k && Na == F && open_neighbors(g, Cb) == F && A.size() <= Cb.size()) {
+    if (F.size() <= k && Na == F && open_neighbors(g, Cb) == F && (!prune || A.size() <= Cb.size())) {
         return {Na};
     }
 
@@ -157,12 +157,12 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
     for (int v : dif) {
         auto F_(F);
         F_.insert(v);
-        for (auto& s : enum_rec(g, k, a, b, A, F_)) {
+        for (auto& s : enum_rec(g, k, a, b, A, F_, prune)) {
             ret.push_back(s);
         }
         auto A_ = compute_A_(g, A, b, v);
         if (A_.empty()) continue;
-        for (auto& s : enum_rec(g, k, a, b, A_, F)) {
+        for (auto& s : enum_rec(g, k, a, b, A_, F, prune)) {
             ret.push_back(s);
         }
     }
@@ -192,44 +192,11 @@ vector<unordered_set<int>> list_exact_slow(const Graph& g, int k) {
             if (a == b) continue;
             // a と b の順序は重要
             if (!is_adjacent(g, a, b)) {
-                unordered_set<int> A = {a}, F;
-                auto Na = open_neighbors(g, a);
-                auto Nb = open_neighbors(g, b);
-                F = intersection(Na, Nb);
+                unordered_set<int> A = {a}, F = intersection(open_neighbors(g, a), open_neighbors(g, b));
                 for (auto& s : enum_rec(g, k, a, b, A, F)) {
                     ret.push_back(s);
                 }
             }
-        }
-    }
-    return unique(ret);
-}
-
-// list all minimal separators of size at most k
-vector<unordered_set<int>> list_exact(const Graph& g, int k) {
-    vector<unordered_set<int>> ret;
-    int v = min_fill_vertex(g);
-    unordered_set<int> X = open_neighbors(g, v);
-    for (int a : X) {
-        for (int b : X) {
-            if (a == b) continue;
-            // a と b の順序は重要
-            if (!is_adjacent(g, a, b)) {
-                unordered_set<int> A = {a}, F;
-                auto Na = open_neighbors(g, a);
-                auto Nb = open_neighbors(g, b);
-                F = intersection(Na, Nb);
-                for (auto& s : enum_rec(g, k, a, b, A, F)) {
-                    ret.push_back(s);
-                }
-            }
-        }
-    }
-
-    for (auto& conn : components(remove(g, X))) {
-        if (conn.nodes.count(v)) continue;
-        for (auto& s : list_exact(local(g, join(conn.nodes, X)), k)) {
-            ret.push_back(s);
         }
     }
     return unique(ret);
@@ -242,4 +209,32 @@ bool is_separators(const Graph& g, const vector<unordered_set<int>>& seps) {
         if (!is_separator(g, s)) return false;
     }
     return true;
+}
+
+// list all minimal separators of size at most k
+vector<unordered_set<int>> list_exact(const Graph& g, int k) {
+    vector<unordered_set<int>> ret;
+    int v = min_fill_vertex(g);
+    unordered_set<int> X = open_neighbors(g, v);
+    for (int a : X) {
+        for (int b : X) {
+            // a-b separator を全列挙するので順序は関係ない
+            if (a < b && !is_adjacent(g, a, b)) {
+                unordered_set<int> A = {a}, F = intersection(open_neighbors(g, a), open_neighbors(g, b));
+                for (auto& s : enum_rec(g, k, a, b, A, F, false)) {
+                    ret.push_back(s);
+                }
+            }
+        }
+    }
+    if (is_separator(g, {v})) ret.push_back({v});
+    for (auto& conn : components(remove(g, X))) {
+        auto N = open_neighbors(g, conn.nodes);
+        if (is_separator(g, N)) ret.push_back(N);
+        if (conn.nodes.count(v)) continue;
+        for (auto& s : list_exact(local(g, join(conn.nodes, X)), k)) {
+            ret.push_back(s);
+        }
+    }
+    return unique(ret);
 }
