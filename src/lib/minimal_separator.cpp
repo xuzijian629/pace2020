@@ -128,6 +128,27 @@ vector<unordered_set<int>> unique(const vector<unordered_set<int>>& cs) {
 
 vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const unordered_set<int>& A,
                                     const unordered_set<int>& F, bool prune = true) {
+    // prune: min(A) == a && min(Cb) == b の条件を使用するか
+    // minimal a-b separator を列挙するとき、この条件をいれてしまうと数え漏れが発生する
+    auto Na = open_neighbors(g, A);
+    auto dif = difference(Na, F);
+    if (!dif.empty()) {
+        vector<unordered_set<int>> ret;
+        for (int v : dif) {
+            auto F_(F);
+            F_.insert(v);
+            for (auto& s : enum_rec(g, k, a, b, A, F_, prune)) {
+                ret.push_back(s);
+            }
+            auto A_ = compute_A_(g, A, b, v);
+            if (A_.empty()) continue;
+            for (auto& s : enum_rec(g, k, a, b, A_, F, prune)) {
+                ret.push_back(s);
+            }
+        }
+        return unique(ret);
+    }
+
     if (F.size() > k) return {};
     if (prune && a != get_min(A)) return {};
     unordered_set<int> Cb;
@@ -140,7 +161,6 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
     assert(!Cb.empty());
     if (prune && b != get_min(Cb)) return {};
     if (!is_subset(F, open_neighbors(g, Cb))) return {};
-    auto Na = open_neighbors(g, A);
     if (F.size() == k && Na != F) return {};
     if (prune && A.size() > Cb.size()) return {};
     if (Na.size() > k && A.size() + (Na.size() - k) > min((int)Cb.size(), (g.n - k) / 2)) return {};
@@ -150,23 +170,7 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
     if (F.size() <= k && Na == F && open_neighbors(g, Cb) == F && (!prune || A.size() <= Cb.size())) {
         return {Na};
     }
-
-    auto dif = difference(Na, F);
-    if (dif.empty()) return {};
-    vector<unordered_set<int>> ret;
-    for (int v : dif) {
-        auto F_(F);
-        F_.insert(v);
-        for (auto& s : enum_rec(g, k, a, b, A, F_, prune)) {
-            ret.push_back(s);
-        }
-        auto A_ = compute_A_(g, A, b, v);
-        if (A_.empty()) continue;
-        for (auto& s : enum_rec(g, k, a, b, A_, F, prune)) {
-            ret.push_back(s);
-        }
-    }
-    return unique(ret);
+    assert(false);
 }
 
 Graph local(const Graph& g, const unordered_set<int>& C) {
@@ -229,9 +233,9 @@ vector<unordered_set<int>> list_exact(const Graph& g, int k) {
     }
     if (is_separator(g, {v})) ret.push_back({v});
     for (auto& conn : components(remove(g, X))) {
-        auto N = open_neighbors(g, conn.nodes);
-        if (is_separator(g, N)) ret.push_back(N);
         if (conn.nodes.count(v)) continue;
+        auto N = open_neighbors(g, conn.nodes);
+        if (N.size() <= k && is_separator(g, N)) ret.push_back(N);
         for (auto& s : list_exact(local(g, join(conn.nodes, X)), k)) {
             ret.push_back(s);
         }
