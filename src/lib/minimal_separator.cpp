@@ -133,6 +133,7 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
     auto Na = open_neighbors(g, A);
     auto dif = difference(Na, F);
     if (!dif.empty()) {
+        // Lemma 4 による枝刈りは未追加
         vector<unordered_set<int>> ret;
         for (int v : dif) {
             auto F_(F);
@@ -164,7 +165,6 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
     if (F.size() == k && Na != F) return {};
     if (prune && A.size() > Cb.size()) return {};
     if (Na.size() > k && A.size() + (Na.size() - k) > min((int)Cb.size(), (g.n - k) / 2)) return {};
-    // Lemma 4 による枝刈りは未追加
 
     // F.size() == k は論文の誤植？スライドは F.size() <= k になっている
     if (F.size() <= k && Na == F && open_neighbors(g, Cb) == F && (!prune || A.size() <= Cb.size())) {
