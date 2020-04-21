@@ -126,14 +126,62 @@ vector<unordered_set<int>> unique(const vector<unordered_set<int>>& cs) {
     return ret;
 }
 
+vector<vector<int>> compute_P(const Graph& g, vector<vector<int>> P, unordered_set<int> forbidden) {
+    int n = P.size();
+    for (auto& a : P) forbidden.insert(a[0]);
+    while (1) {
+        bool update = false;
+        for (int i = 0; i < n; i++) {
+            int e = P[i].back();
+            for (int a : g.adj.at(e)) {
+                if (!forbidden.count(a)) {
+                    P[i].push_back(a);
+                    forbidden.insert(a);
+                    update = true;
+                    break;
+                }
+            }
+        }
+        if (!update) break;
+    }
+    return P;
+}
+
+constexpr int r_prune = 10;
 vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const unordered_set<int>& A,
                                     const unordered_set<int>& F, bool prune = true) {
     // prune: min(A) == a && min(Cb) == b の条件を使用するか
     // minimal a-b separator を列挙するとき、この条件をいれてしまうと数え漏れが発生する
+    if (F.size() > k) return {};
     auto Na = open_neighbors(g, A);
+    if (F.size() == k && Na != F) return {};
+
+    unordered_set<int> Cb;
+    for (auto& conn : components(remove(g, close_neighbors(g, A)))) {
+        if (conn.nodes.count(b)) {
+            Cb = conn.nodes;
+            break;
+        }
+    }
+    assert(!Cb.empty());
+
+    if (prune && A.size() > Cb.size()) return {};
+    if (Na.size() > k && A.size() + (Na.size() - k) > min((int)Cb.size(), (g.n - k) / 2)) return {};
+    if (!is_subset(F, open_neighbors(g, Cb))) return {};
+
     auto dif = difference(Na, F);
     if (!dif.empty()) {
-        // Lemma 4 による枝刈りは未追加
+        // Lemma 4 による枝刈り
+        if (Na.size() > k && A.size() + r_prune * (dif.size() - (k - F.size())) >= (g.n - k) / 2) {
+            vector<vector<int>> orig_P;
+            for (auto& p : dif) orig_P.push_back({p});
+            auto P = compute_P(g, orig_P, close_neighbors(g, A));
+            int d = 0;
+            sort(P.begin(), P.end(), [](auto& p, auto& q) { return p.size() < q.size(); });
+            for (int i = 0; i < P.size() - (k - F.size()); i++) d += P[i].size();
+            if (A.size() + d > min((int)Cb.size(), (g.n - k) / 2)) return {};
+        }
+
         vector<unordered_set<int>> ret;
         for (int v : dif) {
             auto F_(F);
@@ -150,22 +198,9 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
         return unique(ret);
     }
 
-    if (F.size() > k) return {};
+    // この条件は再帰の下にもってこないとダメ
     if (prune && a != get_min(A)) return {};
-    unordered_set<int> Cb;
-    for (auto& conn : components(remove(g, close_neighbors(g, A)))) {
-        if (conn.nodes.count(b)) {
-            Cb = conn.nodes;
-            break;
-        }
-    }
-    assert(!Cb.empty());
     if (prune && b != get_min(Cb)) return {};
-    if (!is_subset(F, open_neighbors(g, Cb))) return {};
-    if (F.size() == k && Na != F) return {};
-    if (prune && A.size() > Cb.size()) return {};
-    if (Na.size() > k && A.size() + (Na.size() - k) > min((int)Cb.size(), (g.n - k) / 2)) return {};
-
     // F.size() == k は論文の誤植？スライドは F.size() <= k になっている
     if (F.size() <= k && Na == F && open_neighbors(g, Cb) == F && (!prune || A.size() <= Cb.size())) {
         return {Na};
