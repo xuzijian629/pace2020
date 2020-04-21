@@ -234,6 +234,8 @@ vector<unordered_set<int>> list_exact(const Graph& g, int k) {
     if (is_separator(g, {v})) ret.push_back({v});
     for (auto& conn : components(remove(g, X))) {
         if (conn.nodes.count(v)) continue;
+        // conn.nodes == {v} のとき、 N (== X) が解にならない場合は存在するが
+        // そもそも考えなくていいかはよくわからない（保留）
         auto N = open_neighbors(g, conn.nodes);
         if (N.size() <= k && is_separator(g, N)) ret.push_back(N);
         for (auto& s : list_exact(local(g, join(conn.nodes, X)), k)) {
