@@ -91,21 +91,29 @@ bool is_subset(const unordered_set<int>& a, const unordered_set<int>& b) {
     return true;
 }
 
+// sep によって分断されたグラフの連結成分のうち、 v を含むものを返す
+unordered_set<int> components_contain(const Graph& g, const unordered_set<int>& sep, int v) {
+    assert(!sep.count(v));
+    unordered_set<int> ret;
+    auto dfs = [&](auto& dfs, int a) -> void {
+        ret.insert(a);
+        for (int b : g.adj.at(a)) {
+            if (!ret.count(b) && !sep.count(b)) {
+                dfs(dfs, b);
+            }
+        }
+    };
+    dfs(dfs, v);
+    return ret;
+}
+
 unordered_set<int> compute_A_(const Graph& g, const unordered_set<int>& A, int b, int v) {
     unordered_set<int> C(A);
     C.insert(v);
-    for (auto& conn : components(remove(g, close_neighbors(g, C)))) {
-        if (conn.nodes.count(b)) {
-            auto N = open_neighbors(g, conn.nodes);
-            // N is minimal C-b separator close to C
-            for (auto& A_ : components(remove(g, N))) {
-                if (A_.nodes.count(v)) return A_.nodes;
-            }
-            assert(false);
-        }
-    }
-    // not-found (for example, when b and v are connected)
-    return {};
+    auto rem = close_neighbors(g, C);
+    if (rem.count(b)) return {};
+    auto N = open_neighbors(g, components_contain(g, rem, b));
+    return components_contain(g, N, v);
 }
 
 vector<unordered_set<int>> unique(const vector<unordered_set<int>>& cs) {
@@ -196,15 +204,7 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
     auto Na = open_neighbors(g, A);
     if (F.size() == k && Na != F) return {};
 
-    unordered_set<int> Cb;
-    for (auto& conn : components(remove(g, close_neighbors(g, A)))) {
-        if (conn.nodes.count(b)) {
-            Cb = conn.nodes;
-            break;
-        }
-    }
-    assert(!Cb.empty());
-
+    unordered_set<int> Cb = components_contain(g, close_neighbors(g, A), b);
     if (prune && A.size() > Cb.size()) return {};
     if (Na.size() > k && A.size() + (Na.size() - k) > min((int)Cb.size(), (g.n - k) / 2)) return {};
     if (!is_subset(F, open_neighbors(g, Cb))) return {};
