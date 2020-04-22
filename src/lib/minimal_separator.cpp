@@ -147,6 +147,50 @@ vector<vector<int>> compute_P(const Graph& g, vector<vector<int>> P, unordered_s
     return P;
 }
 
+constexpr int mod = 1e9 + 7;
+using hash_t = int;
+unordered_map<hash_t, tuple<Graph, int, int, int, unordered_set<int>, unordered_set<int>, bool>> args_memo;
+unordered_map<hash_t, vector<unordered_set<int>>> enum_rec_memo;
+
+hash_t get_hash(vector<int> v, int base) {
+    sort(v.begin(), v.end());
+    hash_t ret = 0;
+    int b = 1;
+    for (int a : v) {
+        ret += 1LL * b * a % mod;
+        if (ret >= mod) ret -= mod;
+        b = 1LL * b * base % mod;
+    }
+    return ret;
+}
+
+hash_t get_hash(const unordered_set<int>& A, int base) { return get_hash(vector<int>(A.begin(), A.end()), base); }
+
+hash_t get_hash(const Graph& g) {
+    vector<int> es;
+    for (int a : g.nodes) {
+        for (int b : g.adj.at(a)) {
+            if (a < b) es.push_back(629 * a + b);
+        }
+    }
+    return get_hash(g.nodes, 1333) ^ get_hash(es, 13333);
+}
+
+hash_t get_hash(const Graph& g, int k, int a, int b, const unordered_set<int>& A, const unordered_set<int>& F,
+                bool prune) {
+    return (a * 11111 + b) ^ get_hash(g) ^ get_hash(A, 334334334 + prune) ^ get_hash(F, 443443443 + prune);
+}
+
+bool operator==(const Graph& g1, const Graph& g2) {
+    if (g1.n != g2.n || g1.m != g2.m) return false;
+    if (g1.nodes != g2.nodes) return false;
+    for (int a : g1.nodes) {
+        if (!g2.nodes.count(a)) return false;
+        if (g1.adj.at(a) != g2.adj.at(a)) return false;
+    }
+    return true;
+}
+
 constexpr int r_prune = 10;
 vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const unordered_set<int>& A,
                                     const unordered_set<int>& F, bool prune = true) {
@@ -171,6 +215,13 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
 
     auto dif = difference(Na, F);
     if (!dif.empty()) {
+        hash_t h = get_hash(g, k, a, b, A, F, prune);
+        auto args = make_tuple(g, k, a, b, A, F, prune);
+        if (args_memo.count(h) && args_memo[h] == args) {
+            return enum_rec_memo[h];
+        }
+        args_memo[h] = args;
+
         // Lemma 4 による枝刈り
         if (Na.size() > k && A.size() + r_prune * (dif.size() - (k - F.size())) >= (g.n - k) / 2) {
             vector<vector<int>> orig_P;
@@ -195,7 +246,8 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
                 ret.push_back(s);
             }
         }
-        return unique(ret);
+
+        return enum_rec_memo[h] = unique(ret);
     }
 
     // この条件は再帰の下にもってこないとダメ
