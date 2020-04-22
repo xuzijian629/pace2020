@@ -1,11 +1,7 @@
 #pragma once
 #include "graph.cpp"
 
-unordered_set<int> open_neighbors(const Graph& g, int v) {
-    unordered_set<int> ret;
-    for (int a : g.adj.at(v)) ret.insert(a);
-    return ret;
-}
+unordered_set<int> open_neighbors(const Graph& g, int v) { return g.adj.at(v); }
 
 unordered_set<int> open_neighbors(const Graph& g, const unordered_set<int>& C) {
     unordered_set<int> ret;
@@ -30,8 +26,8 @@ unordered_set<int> close_neighbors(const Graph& g, const unordered_set<int>& C) 
 }
 
 unordered_set<int> intersection(const unordered_set<int>& A, const unordered_set<int>& B) {
-    unordered_set<int> ret;
     if (A.size() > B.size()) return intersection(B, A);
+    unordered_set<int> ret;
     for (int a : A) {
         if (B.count(a)) ret.insert(a);
     }
