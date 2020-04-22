@@ -154,7 +154,6 @@ vector<vector<int>> compute_P(const Graph& g, vector<vector<int>> P, unordered_s
 constexpr int mod = 1e9 + 7;
 using hash_t = int;
 unordered_map<hash_t, tuple<Graph, int, int, int, unordered_set<int>, unordered_set<int>, bool>> args_memo;
-unordered_map<hash_t, vector<unordered_set<int>>> enum_rec_memo;
 
 hash_t get_hash(vector<int> v, int base) {
     sort(v.begin(), v.end());
@@ -213,9 +212,8 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
     if (!dif.empty()) {
         hash_t h = get_hash(g, k, a, b, A, F, prune);
         auto args = make_tuple(g, k, a, b, A, F, prune);
-        if (args_memo.count(h) && args_memo[h] == args) {
-            return enum_rec_memo[h];
-        }
+        // すでに列挙された場合はもう列挙しなくてよい
+        if (args_memo.count(h) && args_memo[h] == args) return {};
         args_memo[h] = args;
 
         // Lemma 4 による枝刈り
@@ -243,7 +241,7 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
             }
         }
 
-        return enum_rec_memo[h] = unique(ret);
+        return unique(ret);
     }
 
     // この条件は再帰の下にもってこないとダメ
