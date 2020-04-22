@@ -1,5 +1,5 @@
 ##### EDIT HERE #####
-BASE_FILE=sample.cpp
+BASE_FILE=min-sep.cpp
 #####################
 src_dir=$(dirname $0)
 
