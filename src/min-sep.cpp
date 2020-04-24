@@ -48,7 +48,8 @@ Graph solve(const Graph& g, int k) {
         bool ok = true;
         auto comps = components(remove(g, s));
         // 頂点数が大きいものほど失敗しやすそう（しかし、頂点数が小さいもので失敗するものをすぐに発見したほうがよさそう）
-        // sort(comps.begin(), comps.end(), [](auto& a, auto& b) { return a.n < b.n; });
+        sort(comps.begin(), comps.end(), [](auto& a, auto& b) { return a.n < b.n; });
+        // TODO: すべての連結成分について、 terminate_by_lb をチェックしたほうがよさそう
         for (auto& C : comps) {
             Graph subtree = solve(C, k - s.size());
             if (!subtree.n) {
