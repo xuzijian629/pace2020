@@ -12,3 +12,14 @@ for i in {1..8}; do
         echo "test $i passed"
     fi
 done;
+
+for i in {1..300}; do
+    $base_dir/a.out < $base_dir/in/rand_$i.in > $base_dir/tmp
+    d=$(diff $base_dir/tmp $base_dir/out/rand_$i.out)
+    if [ $? = 1 ]; then
+        echo $d
+        exit 1
+    else
+        echo "test rand_$i passed"
+    fi
+done;
