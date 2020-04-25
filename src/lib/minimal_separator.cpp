@@ -153,7 +153,6 @@ vector<vector<int>> compute_P(const Graph& g, vector<vector<int>> P, unordered_s
 
 constexpr int mod = 1e9 + 7;
 using hash_t = int;
-unordered_map<hash_t, tuple<Graph, int, int, int, unordered_set<int>, unordered_set<int>, bool>> args_memo;
 
 hash_t get_hash(vector<int> v, int base) {
     sort(v.begin(), v.end());
@@ -179,11 +178,6 @@ hash_t get_hash(const Graph& g) {
     return get_hash(g.nodes, 1333) ^ get_hash(es, 13333);
 }
 
-hash_t get_hash(const Graph& g, int k, int a, int b, const unordered_set<int>& A, const unordered_set<int>& F,
-                bool prune) {
-    return (a * 11111 + b) ^ get_hash(g) ^ get_hash(A, 334334334 + prune) ^ get_hash(F, 443443443 + prune);
-}
-
 bool operator==(const Graph& g1, const Graph& g2) {
     if (g1.n != g2.n || g1.m != g2.m) return false;
     if (g1.nodes != g2.nodes) return false;
@@ -200,58 +194,47 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
     // prune: min(A) == a && min(Cb) == b の条件を使用するか
     // minimal a-b separator を列挙するとき、この条件をいれてしまうと数え漏れが発生する
     if (F.size() > k) return {};
+    if (prune && a != get_min(A)) return {};
     auto Na = open_neighbors(g, A);
     if (F.size() == k && Na != F) return {};
-
     unordered_set<int> Cb = components_contain(g, close_neighbors(g, A), b);
+    if (prune && b != get_min(Cb)) return {};
+    // F.size() == k は論文の誤植？スライドは F.size() <= k になっている
     if (prune && A.size() > Cb.size()) return {};
     if (Na.size() > k && A.size() + (Na.size() - k) > min((int)Cb.size(), (g.n - k) / 2)) return {};
     if (!is_subset(F, open_neighbors(g, Cb))) return {};
-
-    auto dif = difference(Na, F);
-    if (!dif.empty()) {
-        hash_t h = get_hash(g, k, a, b, A, F, prune);
-        auto args = make_tuple(g, k, a, b, A, F, prune);
-        // すでに列挙された場合はもう列挙しなくてよい
-        if (args_memo.count(h) && args_memo[h] == args) return {};
-        args_memo[h] = args;
-
-        // Lemma 4 による枝刈り
-        if (Na.size() > k && A.size() + r_prune * (dif.size() - (k - F.size())) >= (g.n - k) / 2) {
-            vector<vector<int>> orig_P;
-            for (auto& p : dif) orig_P.push_back({p});
-            auto P = compute_P(g, orig_P, close_neighbors(g, A));
-            int d = 0;
-            sort(P.begin(), P.end(), [](auto& p, auto& q) { return p.size() < q.size(); });
-            for (int i = 0; i < P.size() - (k - F.size()); i++) d += P[i].size();
-            if (A.size() + d > min((int)Cb.size(), (g.n - k) / 2)) return {};
-        }
-
-        vector<unordered_set<int>> ret;
-        for (int v : dif) {
-            auto F_(F);
-            F_.insert(v);
-            for (auto& s : enum_rec(g, k, a, b, A, F_, prune)) {
-                ret.push_back(s);
-            }
-            auto A_ = compute_A_(g, A, b, v);
-            if (A_.empty()) continue;
-            for (auto& s : enum_rec(g, k, a, b, A_, F, prune)) {
-                ret.push_back(s);
-            }
-        }
-
-        return unique(ret);
-    }
-
-    // この条件は再帰の下にもってこないとダメ
-    if (prune && a != get_min(A)) return {};
-    if (prune && b != get_min(Cb)) return {};
-    // F.size() == k は論文の誤植？スライドは F.size() <= k になっている
     if (F.size() <= k && Na == F && open_neighbors(g, Cb) == F && (!prune || A.size() <= Cb.size())) {
         return {Na};
     }
-    assert(false);
+
+    auto dif = difference(Na, F);
+    assert(!dif.empty());
+
+    // Lemma 4 による枝刈り
+    if (Na.size() > k && A.size() + r_prune * (dif.size() - (k - F.size())) >= (g.n - k) / 2) {
+        vector<vector<int>> orig_P;
+        for (auto& p : dif) orig_P.push_back({p});
+        auto P = compute_P(g, orig_P, close_neighbors(g, A));
+        int d = 0;
+        sort(P.begin(), P.end(), [](auto& p, auto& q) { return p.size() < q.size(); });
+        for (int i = 0; i < P.size() - (k - F.size()); i++) d += P[i].size();
+        if (A.size() + d > min((int)Cb.size(), (g.n - k) / 2)) return {};
+    }
+
+    vector<unordered_set<int>> ret;
+    int v = *dif.begin();
+    auto F_(F);
+    F_.insert(v);
+    for (auto& s : enum_rec(g, k, a, b, A, F_, prune)) {
+        ret.push_back(s);
+    }
+    auto A_ = compute_A_(g, A, b, v);
+    if (!A_.empty()) {
+        for (auto& s : enum_rec(g, k, a, b, A_, F, prune)) {
+            ret.push_back(s);
+        }
+    }
+    return unique(ret);
 }
 
 Graph local(const Graph& g, const unordered_set<int>& C) {
