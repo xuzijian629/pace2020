@@ -76,11 +76,20 @@ int min_fill_vertex(const Graph& g) {
     return ret;
 }
 
-int get_min(const unordered_set<int>& C) {
+int get_min(const unordered_set<int>& C, const unordered_set<int>& min_over) {
     assert(!C.empty());
-    int ret = 1e9;
-    for (int a : C) ret = min(ret, a);
-    return ret;
+    if (min_over.empty()) {
+        int ret = 1e9;
+        for (int a : C) ret = min(ret, a);
+        return ret;
+    } else {
+        int ret = 1e9;
+        for (int a : C) {
+            if (min_over.count(a)) ret = min(ret, a);
+        }
+        assert(ret != 1e9);
+        return ret;
+    }
 }
 
 // a \subset b?
@@ -190,20 +199,18 @@ bool operator==(const Graph& g1, const Graph& g2) {
 
 constexpr int r_prune = 10;
 vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const unordered_set<int>& A,
-                                    const unordered_set<int>& F, bool prune = true) {
-    // prune: min(A) == a && min(Cb) == b の条件を使用するか
-    // minimal a-b separator を列挙するとき、この条件をいれてしまうと数え漏れが発生する
+                                    const unordered_set<int>& F, unordered_set<int> min_over = {}) {
+    // min_over = {} は、全体集合の代わり（毎回全体集合を指定すると重いので）
     if (F.size() > k) return {};
-    if (prune && a != get_min(A)) return {};
+    if (a != get_min(A, min_over)) return {};
     auto Na = open_neighbors(g, A);
     if (F.size() == k && Na != F) return {};
     unordered_set<int> Cb = components_contain(g, close_neighbors(g, A), b);
-    if (prune && b != get_min(Cb)) return {};
     // F.size() == k は論文の誤植？スライドは F.size() <= k になっている
-    if (prune && A.size() > Cb.size()) return {};
+    if (A.size() > Cb.size()) return {};
     if (Na.size() > k && A.size() + (Na.size() - k) > min((int)Cb.size(), (g.n - k) / 2)) return {};
     if (!is_subset(F, open_neighbors(g, Cb))) return {};
-    if (F.size() <= k && Na == F && open_neighbors(g, Cb) == F && (!prune || A.size() <= Cb.size())) {
+    if (F.size() <= k && Na == F && open_neighbors(g, Cb) == F && (A.size() <= Cb.size())) {
         return {Na};
     }
 
@@ -225,12 +232,12 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
     int v = *dif.begin();
     auto F_(F);
     F_.insert(v);
-    for (auto& s : enum_rec(g, k, a, b, A, F_, prune)) {
+    for (auto& s : enum_rec(g, k, a, b, A, F_, min_over)) {
         ret.push_back(s);
     }
     auto A_ = compute_A_(g, A, b, v);
     if (!A_.empty()) {
-        for (auto& s : enum_rec(g, k, a, b, A_, F, prune)) {
+        for (auto& s : enum_rec(g, k, a, b, A_, F, min_over)) {
             ret.push_back(s);
         }
     }
@@ -286,10 +293,10 @@ vector<unordered_set<int>> list_exact(const Graph& g, int k) {
     unordered_set<int> X = open_neighbors(g, v);
     for (int a : X) {
         for (int b : X) {
-            // a-b separator を全列挙するので順序は関係ない
-            if (a < b && !is_adjacent(g, a, b)) {
+            if (a == b) continue;
+            if (!is_adjacent(g, a, b)) {
                 unordered_set<int> A = {a}, F = intersection(open_neighbors(g, a), open_neighbors(g, b));
-                for (auto& s : enum_rec(g, k, a, b, A, F, false)) {
+                for (auto& s : enum_rec(g, k, a, b, A, F, X)) {
                     ret.push_back(s);
                 }
             }
