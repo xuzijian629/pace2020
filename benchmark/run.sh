@@ -18,6 +18,12 @@ source $base_dir/benchmark/config.sh
 
 for input_file in $(ls $base_dir/data/$DATA_CATEGORY/*.gr | head -n $MAX_TESTS); do
     echo testing case $(basename $input_file)
+    instance=$(basename $input_file)
+    best_file=$base_dir/solutions/best/$DATA_CATEGORY/${instance//.gr/.sol}
+    if [ $DATA_CATEGORY != 'rand' -a -f $best_file -a $SKIP_SOLVED -ne 0 ]; then
+        echo 'skipped'
+        continue
+    fi
     set +e
     docker run -v $abs_base_dir:$abs_base_dir gcc:9.3 \
         timeout $TIME_LIMIT_SEC \
