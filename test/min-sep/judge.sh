@@ -6,7 +6,11 @@ for i in {1..8}; do
     $base_dir/a.out < $base_dir/in/$i.in > $base_dir/tmp
     d=$(diff $base_dir/tmp $base_dir/out/$i.out)
     if [ $? = 1 ]; then
-        echo $d
+        echo "test $i failed"
+        echo "=== output ==="
+        cat $base_dir/tmp
+        echo "=== expected ==="
+        cat $base_dir/out/$i.out
         exit 1
     else
         echo "test $i passed"
@@ -17,7 +21,11 @@ for i in {1..5000}; do
     $base_dir/a.out < $base_dir/in/rand_$i.in > $base_dir/tmp
     d=$(diff $base_dir/tmp $base_dir/out/rand_$i.out)
     if [ $? = 1 ]; then
-        echo $d
+        echo "test rand_$i failed"
+        echo "=== output ==="
+        cat $base_dir/tmp
+        echo "=== expected ==="
+        cat $base_dir/out/rand_$i.out
         exit 1
     else
         echo "test rand_$i passed"
