@@ -208,9 +208,11 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
     unordered_set<int> Cb = components_contain(g, close_neighbors(g, A), b);
     // F.size() == k は論文の誤植？スライドは F.size() <= k になっている
     if (A.size() > Cb.size()) return {};
-    if (Na.size() > k && A.size() + (Na.size() - k) > min((int)Cb.size(), (g.n - k) / 2)) return {};
+    // 枝刈り。効果はほとんどない
+    // if (Na.size() > k && A.size() + (Na.size() - k) > (g.n - k) / 2) return {};
     if (!is_subset(F, open_neighbors(g, Cb))) return {};
-    if (F.size() <= k && Na == F && open_neighbors(g, Cb) == F && (A.size() <= Cb.size())) {
+    if (F.size() <= k && Na == F) {
+        assert(open_neighbors(g, Cb) == F);
         if (b == get_min(Cb, min_over))
             return {Na};
         else
