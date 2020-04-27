@@ -211,7 +211,10 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
     if (Na.size() > k && A.size() + (Na.size() - k) > min((int)Cb.size(), (g.n - k) / 2)) return {};
     if (!is_subset(F, open_neighbors(g, Cb))) return {};
     if (F.size() <= k && Na == F && open_neighbors(g, Cb) == F && (A.size() <= Cb.size())) {
-        return {Na};
+        if (b == get_min(Cb, min_over))
+            return {Na};
+        else
+            return {};
     }
 
     auto dif = difference(Na, F);
