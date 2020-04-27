@@ -308,7 +308,7 @@ vector<unordered_set<int>> list_exact(const Graph& g, int k) {
     for (auto& conn : components(remove(g, X))) {
         if (conn.nodes.count(v)) continue;
         auto N = open_neighbors(g, conn.nodes);
-        if (N.size() <= k && is_separator(g, N)) ret.push_back(N);
+        if (N.size() <= k) ret.push_back(N);
         for (auto& s : list_exact(local(g, join(conn.nodes, X)), k)) {
             ret.push_back(s);
         }
