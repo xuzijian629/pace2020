@@ -265,6 +265,9 @@ Graph local(const Graph& g, const unordered_set<int>& C) {
     return ret;
 }
 
+unordered_map<hash_t, vector<unordered_set<int>>> sep_memo;
+unordered_map<hash_t, pair<Graph, int>> sep_arg_memo;
+
 vector<unordered_set<int>> list_exact_slow(const Graph& g, int k) {
     vector<unordered_set<int>> ret;
     for (int a : g.nodes) {
@@ -293,6 +296,8 @@ bool is_separators(const Graph& g, const vector<unordered_set<int>>& seps) {
 
 // list all minimal separators of size at most k
 vector<unordered_set<int>> list_exact(const Graph& g, int k) {
+    hash_t h = get_hash(g) ^ k;
+    if (sep_arg_memo.count(h) && sep_arg_memo[h] == make_pair(g, k)) return sep_memo[h];
     vector<unordered_set<int>> ret;
     int v = min_fill_vertex(g);
     unordered_set<int> X = open_neighbors(g, v);
@@ -314,6 +319,10 @@ vector<unordered_set<int>> list_exact(const Graph& g, int k) {
         for (auto& s : list_exact(local(g, join(conn.nodes, X)), k)) {
             ret.push_back(s);
         }
+    }
+    if (ret.size() > 100) {
+        sep_arg_memo[h] = make_pair(g, k);
+        sep_memo[h] = ret;
     }
     return unique(ret);
 }

@@ -12,7 +12,7 @@ using namespace std;
 // 不可能なときは empty なグラフを返す
 
 unordered_map<hash_t, Graph> main_memo;
-unordered_map<hash_t, tuple<Graph, int>> main_arg_memo;
+unordered_map<hash_t, pair<Graph, int>> main_arg_memo;
 
 Graph solve(const Graph& g, int k) {
     // separator が存在しない <=> g が完全グラフ
@@ -29,7 +29,8 @@ Graph solve(const Graph& g, int k) {
     }
 
     hash_t h = get_hash(g) ^ k;
-    if (main_arg_memo.count(h) && main_arg_memo[h] == make_tuple(g, k)) return main_memo[h];
+    if (main_arg_memo.count(h) && main_arg_memo[h] == make_pair(g, k)) return main_memo[h];
+    main_arg_memo[h] = make_pair(g, k);
     if (terminate_by_lb(g, k)) return main_memo[h] = Graph();
 
     // separator によって 分解される各連結成分の td は 1 以上
