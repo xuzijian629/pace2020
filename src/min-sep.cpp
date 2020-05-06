@@ -4,6 +4,7 @@ minimal separator 列挙による解法
 
 #include "lib/lower_bound.cpp"
 #include "lib/minimal_separator.cpp"
+#include "lib/tw.cpp"
 
 using namespace std;
 
@@ -33,7 +34,7 @@ Graph solve(const Graph& g, int k) {
 
     // separator によって 分解される各連結成分の td は 1 以上
     // サイズ k - 1 までの separator を列挙すればいい
-    auto seps = list_exact(g, k - 1);
+    auto seps = list_exact(g, min(k - 1, treewidth_lb(g) + 1));
     if (seps.empty()) return main_memo[h] = Graph();
     for (auto& s : seps) {
         Graph decomp;
