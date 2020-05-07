@@ -36,6 +36,7 @@ int degeneracy(const Graph& g) {
                     D[deg[w]].insert(w);
                 }
             }
+            break;
         }
     }
 
