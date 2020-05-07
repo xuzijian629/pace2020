@@ -15,6 +15,7 @@ bool all_feasible(const Graph& g, const unordered_set<int>& S, const unordered_s
 
 bool is_feasible(const Graph& g, const unordered_set<int>& C, const unordered_set<unordered_set<int>>& min_seps, int k,
                  const unordered_set<unordered_set<int>>& is_feasible_memo) {
+    if (is_feasible_memo.count(C)) return true;
     if (min_seps.count(open_neighbors(g, C)) && close_neighbors(g, C).size() <= k + 1) return true;
     int min_C = get_min(C, {});
     for (auto& D : is_feasible_memo) {
@@ -23,6 +24,17 @@ bool is_feasible(const Graph& g, const unordered_set<int>& C, const unordered_se
             return true;
     }
     return all_feasible(g, join(open_neighbors(g, C), unordered_set<int>({min_C})), C, min_seps, k, is_feasible_memo);
+}
+
+bool is_inbound(const Graph& g, const unordered_set<int>& C) {
+    int min_C = get_min(C, {});
+    auto N = open_neighbors(g, C);
+    for (auto& conn : components(remove(g, N))) {
+        if (open_neighbors(g, conn.nodes) == N && get_min(conn.nodes, {}) < min_C) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool all_feasible(const Graph& g, const unordered_set<int>& S, const unordered_set<int>& C,
@@ -34,6 +46,7 @@ bool all_feasible(const Graph& g, const unordered_set<int>& S, const unordered_s
             if (open_neighbors(g, D.nodes) == S) {
                 if (!is_feasible(g, D.nodes, min_seps, k, is_feasible_memo)) return false;
             } else {
+                // assert(is_inbound(g, D.nodes));
                 if (!is_feasible_memo.count(D.nodes)) return false;
             }
         }
