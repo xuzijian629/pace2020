@@ -112,7 +112,6 @@ int degeneracy(const Graph& g) {
         D[deg[i]].insert(i);
     }
     int ret = 0;
-    int s = 0;
     for (int _ = 0; _ < N; _++) {
         for (int i = 0; i < N; i++) {
             if (D[i].empty()) continue;
