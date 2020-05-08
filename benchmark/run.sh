@@ -6,9 +6,7 @@ abs_base_dir=$(cd $base_dir && pwd -P)
 
 echo building cpp files
 
-docker run -v $abs_base_dir:$abs_base_dir gcc:9.3 \
-    bash $abs_base_dir/src/build.sh
-
+$base_dir/src/build.sh
 $base_dir/benchmark/scripts/build.sh
 
 execution_id=$(date +%s)
@@ -25,9 +23,7 @@ for input_file in $(ls $base_dir/data/$DATA_CATEGORY/*.gr | head -n $MAX_TESTS);
         continue
     fi
     set +e
-    docker run -v $abs_base_dir:$abs_base_dir gcc:9.3 \
-        timeout $TIME_LIMIT_SEC \
-        bash $abs_base_dir/benchmark/scripts/run_main.sh $input_file $execution_id
+    timeout $TIME_LIMIT_SEC $base_dir/benchmark/scripts/run_main.sh $input_file $execution_id
     exit_code=$?
     if [ $exit_code -eq 124 ]; then
         echo '[TLE]'
