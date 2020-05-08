@@ -1,5 +1,6 @@
 ##### EDIT HERE #####
 TIME_LIMIT_SEC=2400
+DATA_CATEGORY=exact
 MAX_TESTS=1000
 SKIP_SOLVED=1
 #####################
