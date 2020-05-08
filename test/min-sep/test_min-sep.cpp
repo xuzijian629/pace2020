@@ -1,8 +1,9 @@
 #include "../../src/lib/minimal_separator.cpp"
 
-int main() {
+int main(int argc, char** argv) {
+    int max_n = argc == 1 ? 10 : atoi(argv[1]);
     Graph g = read_input();
-    auto minseps = list_exact(g, 10);
+    auto minseps = list_exact(g, max_n);
     assert(is_separators(g, minseps));
     vector<vector<int>> sol;
     for (auto& s : minseps) {
