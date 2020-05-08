@@ -5,5 +5,5 @@ verify
 tempCodeRunnerFile.cpp
 solutions/*
 !solutions/best/
-tmp
+tmp*
 tmp/
