@@ -17,7 +17,7 @@ mkdir -p $base_dir/solutions/$execution_id
 source $base_dir/benchmark/config.sh
 
 for i in {001..020..2}; do
-    input_file=$base_dir/data/$DATA_CATEGORY/$DATA_CATEGORY_$i.gr
+    input_file=$base_dir/data/$DATA_CATEGORY/$DATA_CATEGORY\_$i.gr
     echo testing case $(basename $input_file)
     instance=$(basename $input_file)
     best_file=$base_dir/solutions/best/$DATA_CATEGORY/${instance//.gr/.sol}
