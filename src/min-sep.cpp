@@ -28,15 +28,17 @@ Graph solve(const Graph& g, int k) {
         return decomp;
     }
 
+    if (treedepth_lb(g) > k) return Graph();
+
     hash_t h = get_hash(g) ^ k;
     if (main_arg_memo.count(h) && main_arg_memo[h] == make_pair(g, k)) return main_memo[h];
     main_arg_memo[h] = make_pair(g, k);
-    if (terminate_by_lb(g, k)) return main_memo[h] = Graph();
 
     // separator によって 分解される各連結成分の td は 1 以上
     // サイズ k - 1 までの separator を列挙すればいい
-    auto seps = list_exact(g, min(k - 1, treewidth_lb(g) + 1));
+    auto seps = list_exact(g, min(k - 1, treewidth_ub(g) + 1));
     if (seps.empty()) return main_memo[h] = Graph();
+
     for (auto& s : seps) {
         Graph decomp;
         vector<int> nodes(s.begin(), s.end());
@@ -51,7 +53,16 @@ Graph solve(const Graph& g, int k) {
         auto comps = components(remove(g, s));
         // 頂点数が大きいものほど失敗しやすそう（しかし、頂点数が小さいもので失敗するものをすぐに発見したほうがよさそう）
         sort(comps.begin(), comps.end(), [](auto& a, auto& b) { return a.n < b.n; });
-        // TODO: すべての連結成分について、 terminate_by_lb をチェックしたほうがよさそう
+
+        // 先に treewidth lb による枝刈りをしておく
+        for (auto& C : comps) {
+            if (treedepth_lb(C) > k - s.size()) {
+                ok = false;
+                break;
+            }
+        }
+        if (!ok) continue;
+
         for (auto& C : comps) {
             Graph subtree = solve(C, k - s.size());
             if (!subtree.n) {
