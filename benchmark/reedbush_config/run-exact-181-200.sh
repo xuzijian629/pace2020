@@ -16,10 +16,10 @@ execution_id=$(date +%s)
 mkdir -p $base_dir/solutions/$execution_id
 
 for i in {181..200..2}; do
-    input_file=$base_dir/data/exact/exact_$i.gr
+    input_file=$base_dir/data/$DATA_CATEGORY/$DATA_CATEGORY_$i.gr
     echo testing case $(basename $input_file)
     instance=$(basename $input_file)
-    best_file=$base_dir/solutions/best/exact/${instance//.gr/.sol}
+    best_file=$base_dir/solutions/best/$DATA_CATEGORY/${instance//.gr/.sol}
     set +e
     timeout 1800 $base_dir/benchmark/scripts/run_main.sh $input_file $execution_id
     exit_code=$?
