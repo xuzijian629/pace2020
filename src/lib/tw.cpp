@@ -59,18 +59,16 @@ bool msdp(const Graph& g, const unordered_set<unordered_set<int>>& min_seps, int
     for (auto& s : min_seps) {
         vector<unordered_set<int>> C;
         vector<int> mins;
-        int k = 0;
         for (auto& conn : components(remove(g, s))) {
             if (s != open_neighbors(g, conn.nodes)) continue;
             C.push_back(conn.nodes);
             mins.push_back(get_min(conn.nodes, {}));
         }
         int nin = *min_element(mins.begin(), mins.end());
-        if (C.size() > 1) {
-            for (int i = 0; i < C.size(); i++) {
-                if (mins[i] != nin) {
-                    inbounds.push_back(C[i]);
-                }
+        assert(C.size() > 1);
+        for (int i = 0; i < C.size(); i++) {
+            if (mins[i] != nin) {
+                inbounds.push_back(C[i]);
             }
         }
     }
