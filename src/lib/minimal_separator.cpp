@@ -204,7 +204,6 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
     if (F.size() > k) return {};
     if (a != get_min(A, min_over)) return {};
     auto Na = open_neighbors(g, A);
-    if (F.size() == k && Na != F) return {};
     unordered_set<int> Cb = components_contain(g, close_neighbors(g, A), b);
     // F.size() == k は論文の誤植？スライドは F.size() <= k になっている
     if (A.size() > Cb.size()) return {};
