@@ -14,6 +14,7 @@ cd $PBS_O_WORKDIR
 base_dir=$(pwd -P)
 execution_id=$(date +%s)
 mkdir -p $base_dir/solutions/$execution_id
+source $base_dir/benchmark/config.sh
 
 for i in {081..100..2}; do
     input_file=$base_dir/data/$DATA_CATEGORY/$DATA_CATEGORY_$i.gr
