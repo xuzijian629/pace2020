@@ -16,10 +16,12 @@ unordered_map<hash_t, pair<Graph, int>> main_arg_memo;
 
 Graph solve(const Graph& g, int k) {
     // separator が存在しない <=> g が完全グラフ
-    if (g.n * (g.n - 1) / 2 == g.m) {
-        if (g.n > k) return Graph();
+    int n = g.n();
+    if (n * (n - 1) / 2 == g.m()) {
+        if (n > k) return Graph();
         Graph decomp;
-        vector<int> nodes(g.nodes.begin(), g.nodes.end());
+        vector<int> nodes;
+        FOR_EACH(v, g.nodes) nodes.push_back(v);
         decomp.add_node(nodes[0]);
         decomp.root = nodes[0];
         for (int i = 1; i < nodes.size(); i++) {
@@ -41,7 +43,8 @@ Graph solve(const Graph& g, int k) {
 
     for (auto& s : seps) {
         Graph decomp;
-        vector<int> nodes(s.begin(), s.end());
+        vector<int> nodes;
+        FOR_EACH(v, s) nodes.push_back(v);
         decomp.add_node(nodes[0]);
         decomp.root = nodes[0];
         for (int i = 1; i < nodes.size(); i++) {
@@ -52,11 +55,11 @@ Graph solve(const Graph& g, int k) {
         bool ok = true;
         auto comps = components(remove(g, s));
         // 頂点数が大きいものほど失敗しやすそう（しかし、頂点数が小さいもので失敗するものをすぐに発見したほうがよさそう）
-        sort(comps.begin(), comps.end(), [](auto& a, auto& b) { return a.n < b.n; });
+        sort(comps.begin(), comps.end(), [](auto& a, auto& b) { return a.count() < b.count(); });
 
         // 先に treewidth lb による枝刈りをしておく
         for (auto& C : comps) {
-            if (treedepth_lb(C) > k - s.size()) {
+            if (treedepth_lb(induced(g, C)) > k - s.count()) {
                 ok = false;
                 break;
             }
@@ -64,8 +67,8 @@ Graph solve(const Graph& g, int k) {
         if (!ok) continue;
 
         for (auto& C : comps) {
-            Graph subtree = solve(C, k - s.size());
-            if (!subtree.n) {
+            Graph subtree = solve(induced(g, C), k - s.count());
+            if (!subtree.n()) {
                 ok = false;
                 break;
             }
@@ -84,7 +87,7 @@ int main() {
     Graph g = read_input();
     for (int k = 1;; k++) {
         Graph decomp = solve(g, k);
-        if (decomp.n) {
+        if (decomp.n()) {
             print_decomp(decomp);
             break;
         }
