@@ -7,8 +7,8 @@ int main(int argc, char** argv) {
     assert(is_separators(g, minseps));
     vector<vector<int>> sol;
     for (auto& s : minseps) {
-        vector<int> sep(s.begin(), s.end());
-        sort(sep.begin(), sep.end());
+        vector<int> sep;
+        FOR_EACH(v, s) sep.push_back(v);
         sol.push_back(sep);
     }
     sort(sol.begin(), sol.end(), [](auto& a, auto& b) { return (a.size() == b.size() ? a < b : a.size() < b.size()); });

@@ -1,72 +1,38 @@
 #pragma once
 #include "graph.cpp"
 
-unordered_set<int> open_neighbors(const Graph& g, int v) { return g.adj.at(v); }
+inline BITSET open_neighbors(const Graph& g, int v) { return at(g.adj, v); }
 
-unordered_set<int> open_neighbors(const Graph& g, const unordered_set<int>& C) {
-    unordered_set<int> ret;
-    for (int v : C) {
-        for (int a : g.adj.at(v)) {
-            if (!C.count(a)) ret.insert(a);
-        }
-    }
+BITSET open_neighbors(const Graph& g, const BITSET& C) {
+    BITSET ret;
+    FOR_EACH(v, C) { ret |= at(g.adj, v); }
+    return ret ^ (ret & C);
+}
+
+BITSET close_neighbors(const Graph& g, int v) { return open_neighbors(g, v).set(v); }
+
+BITSET close_neighbors(const Graph& g, const BITSET& C) {
+    BITSET ret = C;
+    FOR_EACH(v, C) { ret |= at(g.adj, v); }
     return ret;
 }
 
-unordered_set<int> close_neighbors(const Graph& g, int v) {
-    unordered_set<int> ret = open_neighbors(g, v);
-    ret.insert(v);
-    return ret;
-}
+inline BITSET intersection(const BITSET& A, const BITSET& B) { return A & B; }
 
-unordered_set<int> close_neighbors(const Graph& g, const unordered_set<int>& C) {
-    auto ret = open_neighbors(g, C);
-    for (int a : C) ret.insert(a);
-    return ret;
-}
-
-unordered_set<int> intersection(const unordered_set<int>& A, const unordered_set<int>& B) {
-    if (A.size() > B.size()) return intersection(B, A);
-    unordered_set<int> ret;
-    for (int a : A) {
-        if (B.count(a)) ret.insert(a);
-    }
-    return ret;
-}
-
-unordered_set<int> join(const unordered_set<int>& A, const unordered_set<int>& B) {
-    unordered_set<int> ret(A);
-    for (int b : B) ret.insert(b);
-    return ret;
-}
+inline BITSET join(const BITSET& A, const BITSET& B) { return A | B; }
 
 // A \ B
-unordered_set<int> difference(const unordered_set<int>& A, const unordered_set<int>& B) {
-    unordered_set<int> ret(A);
-    for (int b : B) {
-        if (ret.count(b)) ret.erase(b);
-    }
-    return ret;
-}
+inline BITSET difference(const BITSET& A, const BITSET& B) { return A ^ (A & B); }
 
-Graph remove(Graph g, const unordered_set<int>& C) {
-    for (int a : C) g.remove_node(a);
-    return g;
-}
+Graph remove(Graph g, const BITSET& C) { return induced(g, difference(g.nodes, C)); }
 
 int min_fill_vertex(const Graph& g) {
     int nin = 1e9;
     int ret = -1;
-    for (int v : g.nodes) {
+    FOR_EACH(v, g.nodes) {
         auto X = open_neighbors(g, v);
         int cnt = 0;
-        for (int a : X) {
-            for (int b : X) {
-                if (a < b && !is_adjacent(g, a, b)) {
-                    cnt++;
-                }
-            }
-        }
+        FOR_EACH(a, X) { cnt += difference(X, at(g.adj, a)).count(); }
         if (cnt < nin) {
             nin = cnt;
             ret = v;
@@ -76,83 +42,71 @@ int min_fill_vertex(const Graph& g) {
     return ret;
 }
 
-int get_min(const unordered_set<int>& C, const unordered_set<int>& min_over) {
-    assert(!C.empty());
-    if (min_over.empty()) {
-        int ret = 1e9;
-        for (int a : C) ret = min(ret, a);
-        return ret;
-    } else {
-        int ret = 1e9;
-        for (int a : C) {
-            if (min_over.count(a)) ret = min(ret, a);
-        }
-        assert(ret != 1e9);
-        return ret;
-    }
+inline int get_min(const BITSET& C) { return C._Find_first(); }
+
+inline int get_min(const BITSET& C, BITSET* min_over) {
+    if (min_over) return get_min(C & *min_over);
+    return get_min(C);
 }
 
-// a \subset b?
-bool is_subset(const unordered_set<int>& a, const unordered_set<int>& b) {
-    for (int c : a) {
-        if (!b.count(c)) return false;
-    }
-    return true;
-}
+// A \subset B?
+inline bool is_subset(const BITSET& A, const BITSET& B) { return (A & B) == A; }
 
 // sep によって分断されたグラフの連結成分のうち、 v を含むものを返す
-unordered_set<int> components_contain(const Graph& g, const unordered_set<int>& sep, int v) {
-    assert(!sep.count(v));
-    unordered_set<int> ret;
-    auto dfs = [&](auto& dfs, int a) -> void {
-        ret.insert(a);
-        for (int b : g.adj.at(a)) {
-            if (!ret.count(b) && !sep.count(b)) {
-                dfs(dfs, b);
-            }
+BITSET components_contain(const Graph& g, const BITSET& sep, int v) {
+    assert(!sep.test(v));
+    BITSET ret;
+    auto bfs = [&](auto& bfs, const BITSET& cur) -> void {
+        BITSET nxt;
+        FOR_EACH(v, cur) { nxt |= difference(at(g.adj, v), join(ret, sep)); }
+        if (nxt.any()) {
+            ret |= nxt;
+            bfs(bfs, nxt);
         }
     };
-    dfs(dfs, v);
+    BITSET cur;
+    ret.set(v);
+    cur.set(v);
+    bfs(bfs, cur);
     return ret;
 }
 
-unordered_set<int> compute_A_(const Graph& g, const unordered_set<int>& A, int b, int v) {
-    unordered_set<int> C(A);
-    C.insert(v);
+BITSET compute_A_(const Graph& g, const BITSET& A, int b, int v) {
+    BITSET C(A);
+    C.set(v);
     auto rem = close_neighbors(g, C);
-    if (rem.count(b)) return {};
+    if (rem.test(b)) return BITSET();
     auto N = open_neighbors(g, components_contain(g, rem, b));
     return components_contain(g, N, v);
 }
 
-vector<unordered_set<int>> unique(const vector<unordered_set<int>>& cs) {
-    vector<unordered_set<int>> ret;
-    set<vector<int>> ss;
-    for (auto& c : cs) {
-        vector<int> s(c.begin(), c.end());
-        sort(s.begin(), s.end());
-        if (!ss.count(s)) {
-            ret.push_back(c);
-            ss.insert(s);
-        }
-    }
-    return ret;
+namespace std {
+bool operator<(const BITSET& a, const BITSET& b) {
+    int k = (a ^ b)._Find_first();
+    if (k == BITSET_MAX_SIZE) return false;
+    return a[k] < b[k];
+}
+}  // namespace std
+
+vector<BITSET> unique(vector<BITSET> cs) {
+    sort(cs.begin(), cs.end());
+    cs.erase(unique(cs.begin(), cs.end()), cs.end());
+    return cs;
 }
 
-vector<vector<int>> compute_P(const Graph& g, vector<vector<int>> P, unordered_set<int> forbidden) {
+vector<vector<int>> compute_P(const Graph& g, vector<vector<int>> P, BITSET forbidden) {
     int n = P.size();
-    for (auto& a : P) forbidden.insert(a[0]);
+    for (auto& a : P) forbidden.set(a[0]);
     while (1) {
         bool update = false;
         for (int i = 0; i < n; i++) {
             int e = P[i].back();
-            for (int a : g.adj.at(e)) {
-                if (!forbidden.count(a)) {
-                    P[i].push_back(a);
-                    forbidden.insert(a);
-                    update = true;
-                    break;
-                }
+            int a = difference(at(g.adj, e), forbidden)._Find_first();
+            if (a < BITSET_MAX_SIZE) {
+                P[i].push_back(a);
+                forbidden.set(a);
+                update = true;
+                break;
             }
         }
         if (!update) break;
@@ -163,54 +117,49 @@ vector<vector<int>> compute_P(const Graph& g, vector<vector<int>> P, unordered_s
 constexpr int mod = 1e9 + 7;
 using hash_t = int;
 
-hash_t get_hash(vector<int> v, int base) {
-    sort(v.begin(), v.end());
+struct Init {
+    array<int, BITSET_MAX_SIZE> pows;
+    Init() {
+        pows[0] = 1;
+        for (int i = 1; i < BITSET_MAX_SIZE; i++) {
+            pows[i] = (long long)pows[i - 1] * 1333 % mod;
+        }
+    }
+} init;
+
+hash_t get_hash(const BITSET& v) {
     hash_t ret = 0;
-    int b = 1;
-    for (int a : v) {
-        ret += 1LL * b * a % mod;
+    FOR_EACH(a, v) {
+        ret += init.pows[a];
         if (ret >= mod) ret -= mod;
-        b = 1LL * b * base % mod;
     }
     return ret;
 }
 
-hash_t get_hash(const unordered_set<int>& A, int base) { return get_hash(vector<int>(A.begin(), A.end()), base); }
-
 hash_t get_hash(const Graph& g) {
-    vector<int> es;
-    for (int a : g.nodes) {
-        for (int b : g.adj.at(a)) {
-            if (a < b) es.push_back(629 * a + b);
-        }
-    }
-    return get_hash(g.nodes, 1333) ^ get_hash(es, 13333);
+    hash_t ret = get_hash(g.nodes);
+    FOR_EACH(a, g.nodes) { ret ^= get_hash(at(g.adj, a)); }
+    return ret;
 }
 
 bool operator==(const Graph& g1, const Graph& g2) {
-    if (g1.n != g2.n || g1.m != g2.m) return false;
     if (g1.nodes != g2.nodes) return false;
-    for (int a : g1.nodes) {
-        if (!g2.nodes.count(a)) return false;
-        if (g1.adj.at(a) != g2.adj.at(a)) return false;
+    FOR_EACH(a, g1.nodes) {
+        if (at(g1.adj, a) != at(g2.adj, a)) return false;
     }
     return true;
 }
 
 constexpr int r_prune = 10;
-vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const unordered_set<int>& A,
-                                    const unordered_set<int>& F, unordered_set<int> min_over = {}) {
-    // min_over = {} は、全体集合の代わり（毎回全体集合を指定すると重いので）
-    if (F.size() > k) return {};
+vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, const BITSET& F, BITSET* min_over) {
+    // min_over = nullptr は、全体集合の代わり（毎回全体集合を指定すると重いので）
+    if (F.count() > k) return {};
     if (a != get_min(A, min_over)) return {};
     auto Na = open_neighbors(g, A);
-    unordered_set<int> Cb = components_contain(g, close_neighbors(g, A), b);
-    // F.size() == k は論文の誤植？スライドは F.size() <= k になっている
-    if (A.size() > Cb.size()) return {};
-    // 枝刈り。効果はほとんどない
-    // if (Na.size() > k && A.size() + (Na.size() - k) > (g.n - k) / 2) return {};
+    BITSET Cb = components_contain(g, close_neighbors(g, A), b);
+    if (A.count() > Cb.count()) return {};
     if (!is_subset(F, open_neighbors(g, Cb))) return {};
-    if (F.size() <= k && Na == F) {
+    if (F.count() <= k && Na == F) {
         assert(open_neighbors(g, Cb) == F);
         if (b == get_min(Cb, min_over))
             return {Na};
@@ -219,28 +168,28 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
     }
 
     auto dif = difference(Na, F);
-    assert(!dif.empty());
+    assert(dif.any());
 
     // Lemma 4 による枝刈り
-    if (Na.size() > k && A.size() + r_prune * (dif.size() - (k - F.size())) >= (g.n - k) / 2) {
+    if (Na.count() > k && A.count() + r_prune * (dif.count() - (k - F.count())) >= (g.n() - k) / 2) {
         vector<vector<int>> orig_P;
-        for (auto& p : dif) orig_P.push_back({p});
+        FOR_EACH(p, dif) orig_P.push_back({p});
         auto P = compute_P(g, orig_P, close_neighbors(g, A));
         int d = 0;
         sort(P.begin(), P.end(), [](auto& p, auto& q) { return p.size() < q.size(); });
-        for (int i = 0; i < P.size() - (k - F.size()); i++) d += P[i].size();
-        if (A.size() + d > min((int)Cb.size(), (g.n - k) / 2)) return {};
+        for (int i = 0; i < P.size() - (k - F.count()); i++) d += P[i].size();
+        if (A.count() + d > min((int)Cb.count(), (g.n() - k) / 2)) return {};
     }
 
-    vector<unordered_set<int>> ret;
-    int v = *dif.begin();
+    vector<BITSET> ret;
+    int v = dif._Find_first();
     auto F_(F);
-    F_.insert(v);
+    F_.set(v);
     for (auto& s : enum_rec(g, k, a, b, A, F_, min_over)) {
         ret.push_back(s);
     }
     auto A_ = compute_A_(g, A, b, v);
-    if (!A_.empty()) {
+    if (A_.any()) {
         for (auto& s : enum_rec(g, k, a, b, A_, F, min_over)) {
             ret.push_back(s);
         }
@@ -248,34 +197,32 @@ vector<unordered_set<int>> enum_rec(const Graph& g, int k, int a, int b, const u
     return unique(ret);
 }
 
-Graph local(const Graph& g, const unordered_set<int>& C) {
+Graph local(const Graph& g, const BITSET& C) {
     Graph ret = induced(g, C);
     for (auto& D : components(remove(g, C))) {
-        auto N = open_neighbors(g, D.nodes);
-        for (int a : N) {
-            for (int b : N) {
-                assert(C.count(a) && C.count(b));
-                if (a < b) {
-                    ret.add_edge(a, b);
-                }
-            }
+        auto N = open_neighbors(g, D);
+        assert(is_subset(N, C));
+        FOR_EACH(a, N) {
+            ret.adj[a] |= N;
+            ret.adj[a].reset(a);
         }
     }
     return ret;
 }
 
-unordered_map<hash_t, vector<unordered_set<int>>> sep_memo;
+unordered_map<hash_t, vector<BITSET>> sep_memo;
 unordered_map<hash_t, pair<Graph, int>> sep_arg_memo;
 
-vector<unordered_set<int>> list_exact_slow(const Graph& g, int k) {
-    vector<unordered_set<int>> ret;
-    for (int a : g.nodes) {
-        for (int b : g.nodes) {
+vector<BITSET> list_exact_slow(const Graph& g, int k) {
+    vector<BITSET> ret;
+    FOR_EACH(a, g.nodes) {
+        FOR_EACH(b, g.nodes) {
             if (a == b) continue;
             // a と b の順序は重要
             if (!is_adjacent(g, a, b)) {
-                unordered_set<int> A = {a}, F = intersection(open_neighbors(g, a), open_neighbors(g, b));
-                for (auto& s : enum_rec(g, k, a, b, A, F)) {
+                BITSET A, F = intersection(open_neighbors(g, a), open_neighbors(g, b)), *min_over = nullptr;
+                A.set(a);
+                for (auto& s : enum_rec(g, k, a, b, A, F, min_over)) {
                     ret.push_back(s);
                 }
             }
@@ -284,9 +231,9 @@ vector<unordered_set<int>> list_exact_slow(const Graph& g, int k) {
     return unique(ret);
 }
 
-bool is_separator(const Graph& g, const unordered_set<int>& sep) { return components(remove(g, sep)).size() > 1; }
+bool is_separator(const Graph& g, const BITSET& sep) { return components(remove(g, sep)).size() > 1; }
 
-bool is_separators(const Graph& g, const vector<unordered_set<int>>& seps) {
+bool is_separators(const Graph& g, const vector<BITSET>& seps) {
     for (auto& s : seps) {
         if (!is_separator(g, s)) return false;
     }
@@ -294,28 +241,29 @@ bool is_separators(const Graph& g, const vector<unordered_set<int>>& seps) {
 }
 
 // list all minimal separators of size at most k
-vector<unordered_set<int>> list_exact(const Graph& g, int k) {
+vector<BITSET> list_exact(const Graph& g, int k) {
     hash_t h = get_hash(g) ^ k;
     if (sep_arg_memo.count(h) && sep_arg_memo[h] == make_pair(g, k)) return sep_memo[h];
-    vector<unordered_set<int>> ret;
+    vector<BITSET> ret;
     int v = min_fill_vertex(g);
-    unordered_set<int> X = open_neighbors(g, v);
-    for (int a : X) {
-        for (int b : X) {
+    BITSET X = open_neighbors(g, v);
+    FOR_EACH(a, X) {
+        FOR_EACH(b, X) {
             if (a == b) continue;
             if (!is_adjacent(g, a, b)) {
-                unordered_set<int> A = {a}, F = intersection(open_neighbors(g, a), open_neighbors(g, b));
-                for (auto& s : enum_rec(g, k, a, b, A, F, X)) {
+                BITSET A, F = intersection(open_neighbors(g, a), open_neighbors(g, b));
+                A.set(a);
+                for (auto& s : enum_rec(g, k, a, b, A, F, &X)) {
                     ret.push_back(s);
                 }
             }
         }
     }
     for (auto& conn : components(remove(g, X))) {
-        if (conn.nodes.count(v)) continue;
-        auto N = open_neighbors(g, conn.nodes);
-        if (N.size() <= k) ret.push_back(N);
-        for (auto& s : list_exact(local(g, join(conn.nodes, X)), k)) {
+        if (conn.test(v)) continue;
+        auto N = open_neighbors(g, conn);
+        if (N.count() <= k) ret.push_back(N);
+        for (auto& s : list_exact(local(g, join(conn, X)), k)) {
             ret.push_back(s);
         }
     }
