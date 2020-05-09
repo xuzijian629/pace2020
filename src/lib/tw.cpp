@@ -125,7 +125,95 @@ int degeneracy(const Graph& g) {
     return ret;
 }
 
+// treewidth == max clique size - 1 == coloring number - 1 == degeneracy
+int treewidth_chordal(const Graph& g) { return degeneracy(g); }
+
 int treewidth_lb(const Graph& g) { return degeneracy(g); }
 
-// compute near-optimal tree decomposition
-int treewidth_ub(const Graph& g) { return treewidth_exact(g); }
+// treewidth heuristic by mindeg
+int mindeg(Graph g) {
+    Graph h(g);
+    int n = g.n();
+    unordered_set<int> erased;
+    unordered_map<int, int> deg;
+    vector<unordered_set<int>> D(n);
+    FOR_EACH(v, g.nodes) {
+        deg[v] = at(g.adj, v).count();
+        D[deg[v]].insert(v);
+    }
+    auto has_edge = [&](int a, int b) { return at(g.adj, a).test(b); };
+    auto erase_edge = [&](int a, int b) {
+        if (!erased.count(a)) {
+            D[deg[a]].erase(a);
+            deg[a]--;
+            D[deg[a]].insert(a);
+        }
+        if (!erased.count(b)) {
+            D[deg[b]].erase(b);
+            deg[b]--;
+            D[deg[b]].insert(b);
+        }
+        at(g.adj, a).reset(b);
+        at(g.adj, b).reset(a);
+    };
+    auto add_edge = [&](int a, int b) {
+        D[deg[a]].erase(a);
+        deg[a]++;
+        D[deg[a]].insert(a);
+        D[deg[b]].erase(b);
+        deg[b]++;
+        D[deg[b]].insert(b);
+        at(g.adj, a).set(b);
+        at(g.adj, b).set(a);
+    };
+    for (int _ = 0; _ < n; _++) {
+        for (int i = 0; i < n; i++) {
+            if (D[i].empty()) continue;
+            int v = *D[i].begin();
+            D[i].erase(v);
+            erased.insert(v);
+            vector<int> neighbors;
+            FOR_EACH(w, at(g.adj, v)) {
+                if (!erased.count(w)) {
+                    erase_edge(v, w);
+                    neighbors.push_back(w);
+                }
+            }
+            for (int a : neighbors) {
+                for (int b : neighbors) {
+                    if (a < b && !has_edge(a, b)) {
+                        add_edge(a, b);
+                        h.add_edge(a, b);
+                    }
+                }
+            }
+            break;
+        }
+    }
+    return treewidth_chordal(h);
+}
+
+// treewidth heuristic by minfill
+int minfill(Graph g) {
+    Graph h(g);
+    int n = g.n();
+    for (int _ = 0; _ < n; _++) {
+        int v = min_fill_vertex(g);
+        FOR_EACH(a, at(g.adj, v)) {
+            FOR_EACH(b, at(g.adj, v)) {
+                if (a < b && !at(h.adj, a).test(b)) {
+                    g.add_edge(a, b);
+                    h.add_edge(a, b);
+                }
+            }
+        }
+        g.remove_node(v);
+    }
+    return treewidth_chordal(h);
+}
+
+// compute near-optimal treewidth
+int treewidth_ub(const Graph& g) {
+    // return treewidth_exact(g);
+    return min(mindeg(g), minfill(g));
+}
