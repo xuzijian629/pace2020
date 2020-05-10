@@ -2,6 +2,7 @@
 minimal separator 列挙による解法
 */
 
+#include "lib/balanced_separator.cpp"
 #include "lib/lower_bound.cpp"
 #include "lib/minimal_separator.cpp"
 #include "lib/tw.cpp"
@@ -31,6 +32,8 @@ Graph solve(const Graph& g, int k) {
     }
 
     if (treedepth_lb(g) > k) return Graph();
+    auto heuristic_decomp = treedepth_heuristic(g);
+    if (depth(heuristic_decomp, heuristic_decomp.root) <= k) return heuristic_decomp;
 
     hash_t h = get_hash(g) ^ k;
     if (main_arg_memo.count(h) && main_arg_memo[h] == make_pair(g, k)) return main_memo[h];
