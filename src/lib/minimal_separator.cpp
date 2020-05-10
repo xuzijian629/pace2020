@@ -9,7 +9,11 @@ BITSET open_neighbors(const Graph& g, const BITSET& C) {
     return ret ^ (ret & C);
 }
 
-BITSET close_neighbors(const Graph& g, int v) { return open_neighbors(g, v).set(v); }
+BITSET close_neighbors(const Graph& g, int v) {
+    auto ret = open_neighbors(g, v);
+    ret.set(v);
+    return ret;
+}
 
 BITSET close_neighbors(const Graph& g, const BITSET& C) {
     BITSET ret = C;
@@ -80,13 +84,14 @@ BITSET compute_A_(const Graph& g, const BITSET& A, int b, int v) {
     return components_contain(g, N, v);
 }
 
-namespace std {
-bool operator<(const BITSET& a, const BITSET& b) {
-    int k = (a ^ b)._Find_first();
-    if (k == BITSET_MAX_SIZE) return false;
-    return a[k] < b[k];
-}
-}  // namespace std
+// for std::bitset
+// namespace std {
+// bool operator<(const BITSET& a, const BITSET& b) {
+//     int k = (a ^ b)._Find_first();
+//     if (k == BITSET_MAX_SIZE) return false;
+//     return a[k] < b[k];
+// }
+// }  // namespace std
 
 vector<BITSET> unique(vector<BITSET> cs) {
     sort(cs.begin(), cs.end());
@@ -101,8 +106,9 @@ vector<vector<int>> compute_P(const Graph& g, vector<vector<int>> P, BITSET forb
         bool update = false;
         for (int i = 0; i < n; i++) {
             int e = P[i].back();
-            int a = difference(at(g.adj, e), forbidden)._Find_first();
-            if (a < BITSET_MAX_SIZE) {
+            auto dif = difference(at(g.adj, e), forbidden);
+            int a = dif._Find_first();
+            if (a < dif.size()) {
                 P[i].push_back(a);
                 forbidden.set(a);
                 update = true;

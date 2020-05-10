@@ -1,15 +1,19 @@
 #pragma once
 #include <bits/stdc++.h>
+
+#include "bitset.cpp"
 using namespace std;
 
 #ifndef BITSET_MAX_SIZE
 #define BITSET_MAX_SIZE 500
 #endif
-using BITSET = bitset<BITSET_MAX_SIZE>;
+// using BITSET = bitset<BITSET_MAX_SIZE>;
+using BITSET = Bitset;
+int MAX_NODE_SIZE;
 #define FOR_EACH(v, bs) for (int v = (bs)._Find_first(); v < (bs).size(); v = (bs)._Find_next(v))
 
 // array may be faster than unordered_map
-using ADJ = array<BITSET, BITSET_MAX_SIZE>;
+using ADJ = vector<BITSET>;
 #define at(adj, i) adj[i]
 // using ADJ = unordered_map<int, BITSET>;
 // #define at(adj, i) adj.at(i)
@@ -25,8 +29,8 @@ struct Graph {
     int root;
     BITSET nodes;
     ADJ adj;
-    Graph() : root(-1) {}
-    Graph(int v) : root(v) { add_node(v); }
+    Graph() : root(-1), adj(MAX_NODE_SIZE) {}
+    Graph(int v) : root(v), adj(MAX_NODE_SIZE) { add_node(v); }
     void add_node(int v) {
         if (!nodes.test(v)) {
             nodes.set(v);
@@ -101,6 +105,7 @@ Graph read_input() {
     string s;
     int n, m;
     cin >> s >> s >> n >> m;
+    MAX_NODE_SIZE = n;
     Graph ret;
     for (int v = 0; v < n; v++) ret.add_node(v);
     for (int i = 0; i < m; i++) {
