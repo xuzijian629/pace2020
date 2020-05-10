@@ -37,9 +37,6 @@ BITSET GA(const Graph& g, double alpha = 0.667) {
                 ret = i;
             }
         }
-        if (ret == -1) {
-            print_graph(g);
-        }
         assert(ret != -1);
         return ret;
     };

@@ -75,7 +75,7 @@ Bitset& Bitset::operator|=(const Bitset& rhs) {
         ret_size = rhs.bits.size();
         bits.resize(ret_size);
     }
-    for (int i = 0; i < ret_size; i++) {
+    for (int i = 0; i < min(bits.size(), rhs.bits.size()); i++) {
         bits[i] |= rhs.bits[i];
     }
     return *this;
@@ -86,7 +86,7 @@ Bitset& Bitset::operator^=(const Bitset& rhs) {
         ret_size = rhs.bits.size();
         bits.resize(ret_size);
     }
-    for (int i = 0; i < ret_size; i++) {
+    for (int i = 0; i < min(bits.size(), rhs.bits.size()); i++) {
         bits[i] ^= rhs.bits[i];
     }
     return *this;
@@ -134,15 +134,18 @@ int Bitset::_Find_next(int k) const {
 int Bitset::count() const {
     int ret = 0;
     for (ull b : bits) {
-        if (b) ret += __builtin_popcount(b);
+        if (b) ret += __builtin_popcountll(b);
     }
     return ret;
 }
-// これは unordered_set の定義用にとりあえずの順序を定義しておけばおｋ
 bool Bitset::operator<(const Bitset& rhs) const {
-    if (bits.size() != rhs.bits.size()) return bits.size() < rhs.bits.size();
-    for (int i = 0; i < bits.size(); i++) {
+    for (int i = 0; i < min(bits.size(), rhs.bits.size()); i++) {
         if (bits[i] != rhs.bits[i]) return bits[i] < rhs.bits[i];
+    }
+    if (bits.size() < rhs.bits.size()) {
+        for (int i = bits.size(); i < rhs.bits.size(); i++) {
+            if (rhs.bits[i]) return true;
+        }
     }
     return false;
 }
