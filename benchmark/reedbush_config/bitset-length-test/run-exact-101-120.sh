@@ -29,7 +29,7 @@ for i in {101..120..2}; do
     output_file=$base_dir/solutions/$execution_id/${instance//.gr/.sol}
     main=$base_dir/src/tmp/main-$instance
     touch $output_file
-    $main < $input_file > $output_file
+    timeout 1800 $main < $input_file > $output_file
     exit_code=$?
     if [ $exit_code -eq 124 ]; then
         echo '[TLE]'
