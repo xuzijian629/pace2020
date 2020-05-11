@@ -7,3 +7,5 @@ solutions/*
 !solutions/best/
 tmp*
 tmp/
+*.dSYM/
+*.tgz
