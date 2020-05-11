@@ -2,6 +2,7 @@
 #include "graph.cpp"
 
 inline BITSET open_neighbors(const Graph& g, int v) { return at(g.adj, v); }
+extern int treedepth_lb(const Graph& g);
 
 BITSET open_neighbors(const Graph& g, const BITSET& C) {
     BITSET ret;
@@ -157,10 +158,13 @@ bool operator==(const Graph& g1, const Graph& g2) {
 }
 
 constexpr int r_prune = 10;
-vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, const BITSET& F, BITSET* min_over) {
+vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, const BITSET& F, BITSET* min_over,
+                        int td_lim) {
     // min_over = nullptr は、全体集合の代わり（毎回全体集合を指定すると重いので）
     if (F.count() > k) return {};
     if (a != get_min(A, min_over)) return {};
+    // treedepth 用の枝刈り
+    if (treedepth_lb(induced(g, A)) + F.count() > td_lim) return {};
     auto Na = open_neighbors(g, A);
     BITSET Cb = components_contain(g, close_neighbors(g, A), b);
     if (A.count() > Cb.count()) return {};
@@ -191,12 +195,12 @@ vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, co
     int v = dif._Find_first();
     auto F_(F);
     F_.set(v);
-    for (auto& s : enum_rec(g, k, a, b, A, F_, min_over)) {
+    for (auto& s : enum_rec(g, k, a, b, A, F_, min_over, td_lim)) {
         ret.push_back(s);
     }
     auto A_ = compute_A_(g, A, b, v);
     if (A_.any()) {
-        for (auto& s : enum_rec(g, k, a, b, A_, F, min_over)) {
+        for (auto& s : enum_rec(g, k, a, b, A_, F, min_over, td_lim)) {
             ret.push_back(s);
         }
     }
@@ -219,7 +223,7 @@ Graph local(const Graph& g, const BITSET& C) {
 unordered_map<hash_t, vector<BITSET>> sep_memo;
 unordered_map<hash_t, pair<Graph, int>> sep_arg_memo;
 
-vector<BITSET> list_exact_slow(const Graph& g, int k) {
+vector<BITSET> list_exact_slow(const Graph& g, int k, int td_lim = 1e9) {
     vector<BITSET> ret;
     FOR_EACH(a, g.nodes) {
         FOR_EACH(b, g.nodes) {
@@ -228,7 +232,7 @@ vector<BITSET> list_exact_slow(const Graph& g, int k) {
             if (!is_adjacent(g, a, b)) {
                 BITSET A, F = intersection(open_neighbors(g, a), open_neighbors(g, b)), *min_over = nullptr;
                 A.set(a);
-                for (auto& s : enum_rec(g, k, a, b, A, F, min_over)) {
+                for (auto& s : enum_rec(g, k, a, b, A, F, min_over, td_lim)) {
                     ret.push_back(s);
                 }
             }
@@ -247,7 +251,7 @@ bool is_separators(const Graph& g, const vector<BITSET>& seps) {
 }
 
 // list all minimal separators of size at most k
-vector<BITSET> list_exact(const Graph& g, int k) {
+vector<BITSET> list_exact(const Graph& g, int k, int td_lim = 1e9) {
     hash_t h = get_hash(g) ^ k;
     if (sep_arg_memo.count(h) && sep_arg_memo[h] == make_pair(g, k)) return sep_memo[h];
     vector<BITSET> ret;
@@ -259,7 +263,7 @@ vector<BITSET> list_exact(const Graph& g, int k) {
             if (!is_adjacent(g, a, b)) {
                 BITSET A, F = intersection(open_neighbors(g, a), open_neighbors(g, b));
                 A.set(a);
-                for (auto& s : enum_rec(g, k, a, b, A, F, &X)) {
+                for (auto& s : enum_rec(g, k, a, b, A, F, &X, td_lim)) {
                     ret.push_back(s);
                 }
             }
@@ -269,7 +273,7 @@ vector<BITSET> list_exact(const Graph& g, int k) {
         if (conn.test(v)) continue;
         auto N = open_neighbors(g, conn);
         if (N.count() <= k) ret.push_back(N);
-        for (auto& s : list_exact(local(g, join(conn, X)), k)) {
+        for (auto& s : list_exact(local(g, join(conn, X)), k, td_lim)) {
             ret.push_back(s);
         }
     }
