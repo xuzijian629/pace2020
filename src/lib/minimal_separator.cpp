@@ -171,10 +171,23 @@ vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, co
     if (!is_subset(F, open_neighbors(g, Cb))) return {};
     if (F.count() <= k && Na == F) {
         assert(open_neighbors(g, Cb) == F);
-        if (b == get_min(Cb, min_over))
-            return {Na};
-        else
+        if (b == get_min(Cb, min_over)) {
+            // ここで余分なものを列挙しないようにしてメモリを節約する
+            bool ok = true;
+            for (auto& conn : components(remove(g, F))) {
+                if (treedepth_lb(induced(g, conn)) + F.count() > td_lim) {
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok) {
+                return {Na};
+            } else {
+                return {};
+            }
+        } else {
             return {};
+        }
     }
 
     auto dif = difference(Na, F);
@@ -221,7 +234,7 @@ Graph local(const Graph& g, const BITSET& C) {
 }
 
 unordered_map<hash_t, vector<BITSET>> sep_memo;
-unordered_map<hash_t, pair<Graph, int>> sep_arg_memo;
+unordered_map<hash_t, tuple<Graph, int, int>> sep_arg_memo;
 
 vector<BITSET> list_exact_slow(const Graph& g, int k, int td_lim = 1e9) {
     vector<BITSET> ret;
@@ -252,8 +265,8 @@ bool is_separators(const Graph& g, const vector<BITSET>& seps) {
 
 // list all minimal separators of size at most k
 vector<BITSET> list_exact(const Graph& g, int k, int td_lim = 1e9) {
-    hash_t h = get_hash(g) ^ k;
-    if (sep_arg_memo.count(h) && sep_arg_memo[h] == make_pair(g, k)) return sep_memo[h];
+    hash_t h = get_hash(g) ^ (1333 * k) ^ td_lim;
+    if (sep_arg_memo.count(h) && sep_arg_memo[h] == make_tuple(g, k, td_lim)) return sep_memo[h];
     vector<BITSET> ret;
     int v = min_fill_vertex(g);
     BITSET X = open_neighbors(g, v);
@@ -278,7 +291,7 @@ vector<BITSET> list_exact(const Graph& g, int k, int td_lim = 1e9) {
         }
     }
     if (ret.size() > 100) {
-        sep_arg_memo[h] = make_pair(g, k);
+        sep_arg_memo[h] = make_tuple(g, k, td_lim);
         sep_memo[h] = ret;
     }
     return unique(ret);

@@ -60,15 +60,6 @@ Graph solve(const Graph& g, int k) {
         // 頂点数が大きいものほど失敗しやすそう（しかし、頂点数が小さいもので失敗するものをすぐに発見したほうがよさそう）
         sort(comps.begin(), comps.end(), [](auto& a, auto& b) { return a.count() < b.count(); });
 
-        // 先に treewidth lb による枝刈りをしておく
-        for (auto& C : comps) {
-            if (treedepth_lb(induced(g, C)) > k - s.count()) {
-                ok = false;
-                break;
-            }
-        }
-        if (!ok) continue;
-
         for (auto& C : comps) {
             Graph subtree = solve(induced(g, C), k - s.count());
             if (!subtree.n()) {
