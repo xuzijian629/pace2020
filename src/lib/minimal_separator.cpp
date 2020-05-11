@@ -85,13 +85,13 @@ BITSET compute_A_(const Graph& g, const BITSET& A, int b, int v) {
 }
 
 // for std::bitset
-// namespace std {
-// bool operator<(const BITSET& a, const BITSET& b) {
-//     int k = (a ^ b)._Find_first();
-//     if (k == BITSET_MAX_SIZE) return false;
-//     return a[k] < b[k];
-// }
-// }  // namespace std
+namespace std {
+bool operator<(const BITSET& a, const BITSET& b) {
+    int k = (a ^ b)._Find_first();
+    if (k == BITSET_MAX_SIZE) return false;
+    return a[k] < b[k];
+}
+}  // namespace std
 
 vector<BITSET> unique(vector<BITSET> cs) {
     sort(cs.begin(), cs.end());
