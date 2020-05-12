@@ -29,7 +29,7 @@ for i in {021..040..2}; do
     output_file=$base_dir/solutions/$execution_id/${instance//.gr/.sol}
     main=$base_dir/src/tmp/main-$instance
     touch $output_file
-    timeout 1800 $main < $input_file > $output_file
+    /usr/bin/time -f "time: %e [sec]\nmemory: %M [KB]" timeout 1800 $main < $input_file > $output_file
     exit_code=$?
     if [ $exit_code -eq 124 ]; then
         echo '[TLE]'
