@@ -22,7 +22,7 @@ for i in {021..040..2}; do
     instance=$(basename $input_file)
     best_file=$base_dir/solutions/best/$DATA_CATEGORY/${instance//.gr/.sol}
     set +e
-    timeout 1800 $base_dir/benchmark/scripts/run_main.sh $input_file $execution_id
+    /usr/bin/time -f "time: %e [sec]\nmemory: %M [KB]" timeout 1800 $base_dir/benchmark/scripts/run_main.sh $input_file $execution_id
     exit_code=$?
     if [ $exit_code -eq 124 ]; then
         echo '[TLE]'
