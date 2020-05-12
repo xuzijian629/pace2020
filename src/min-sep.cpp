@@ -6,20 +6,27 @@ minimal separator 列挙による解法
 #include "lib/lower_bound.cpp"
 #include "lib/minimal_separator.cpp"
 #include "lib/tw.cpp"
+#include "lib/utiltime.cpp"
 
 using namespace std;
 
 // treedepth k 以下の分解を作ることができるか
 // 不可能なときは empty なグラフを返す
 
-unordered_map<hash_t, Graph> main_memo;
-unordered_map<hash_t, pair<Graph, int>> main_arg_memo;
+struct main_memo_t {
+    int lb = 0;
+    int ub = INT_MAX;
+    Graph *ans = nullptr;
+};
+unordered_map<BITSET, main_memo_t> main_memo;
 
 Graph solve(const Graph& g, int k) {
     // separator が存在しない <=> g が完全グラフ
     int n = g.n();
     if (n * (n - 1) / 2 == g.m()) {
-        if (n > k) return Graph();
+        if (n > k) {
+            return Graph();
+        }
         Graph decomp;
         vector<int> nodes;
         FOR_EACH(v, g.nodes) nodes.push_back(v);
@@ -31,18 +38,40 @@ Graph solve(const Graph& g, int k) {
         return decomp;
     }
 
-    if (treedepth_lb(g) > k) return Graph();
+    if (treedepth_lb(g) > k) {
+        return Graph();
+    }
+    if (k < 30 && (1 << k) <= n && (1 << k) <= longest_path_lb(g)) {
+        return Graph();
+    }
     auto heuristic_decomp = treedepth_heuristic(g);
     if (depth(heuristic_decomp, heuristic_decomp.root) <= k) return heuristic_decomp;
 
-    hash_t h = get_hash(g) ^ k;
-    if (main_arg_memo.count(h) && main_arg_memo[h] == make_pair(g, k)) return main_memo[h];
-    main_arg_memo[h] = make_pair(g, k);
+    main_memo_t *main_memo_ptr;
+    // look up memo, 
+    // if k < non trivial lb, return false
+    // if k >= ub, return memorized ans
+    if (main_memo.count(g.nodes)) {
+        main_memo_ptr = &(main_memo[g.nodes]);
+        if (k < main_memo_ptr->lb) {
+            return Graph();
+        }
+        if (main_memo_ptr->ub <= k) {
+            return *(main_memo_ptr->ans);
+        }
+    }
+    else {
+        main_memo[g.nodes] = {0, INT_MAX, nullptr};
+        main_memo_ptr = &(main_memo[g.nodes]);
+    }
 
     // separator によって 分解される各連結成分の td は 1 以上
     // サイズ k - 1 までの separator を列挙すればいい
     auto seps = list_exact(g, min(k - 1, treewidth_ub(g) + 1));
-    if (seps.empty()) return main_memo[h] = Graph();
+    if (seps.empty()) {
+        main_memo_ptr->lb = max(main_memo_ptr->lb, k + 1);
+        return Graph();
+    }
 
     for (auto& s : seps) {
         Graph decomp;
@@ -60,15 +89,6 @@ Graph solve(const Graph& g, int k) {
         // 頂点数が大きいものほど失敗しやすそう（しかし、頂点数が小さいもので失敗するものをすぐに発見したほうがよさそう）
         sort(comps.begin(), comps.end(), [](auto& a, auto& b) { return a.count() < b.count(); });
 
-        // 先に treewidth lb による枝刈りをしておく
-        for (auto& C : comps) {
-            if (treedepth_lb(induced(g, C)) > k - s.count()) {
-                ok = false;
-                break;
-            }
-        }
-        if (!ok) continue;
-
         for (auto& C : comps) {
             Graph subtree = solve(induced(g, C), k - s.count());
             if (!subtree.n()) {
@@ -81,9 +101,13 @@ Graph solve(const Graph& g, int k) {
         for (auto& subtree : subtrees) {
             merge(decomp, subtree, nodes.back(), subtree.root);
         }
-        return main_memo[h] = decomp;
+        main_memo_ptr->ub = min(main_memo_ptr->ub, k);
+        main_memo_ptr->ans = new Graph();
+        *(main_memo_ptr->ans) = decomp;
+        return *(main_memo_ptr->ans);
     }
-    return main_memo[h] = Graph();
+    main_memo_ptr->lb = max(main_memo_ptr->lb, k + 1);
+    return Graph();
 }
 
 int main() {
