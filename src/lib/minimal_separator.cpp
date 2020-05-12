@@ -258,9 +258,11 @@ vector<BITSET> list_exact(const Graph& g, int k) {
     hash_t h = get_hash(g) ^ k;
     if (sep_memo.count(h) && sep_memo[h].g == g) {
         if (k <= sep_memo[h].k) {
-            for (const auto &sep : sep_memo[h].seps) {
-                if (sep.count() <= k) ret.push_back(sep);
-                else break;
+            for (const auto& sep : sep_memo[h].seps) {
+                if (sep.count() <= k)
+                    ret.push_back(sep);
+                else
+                    break;
             }
             return ret;
         }
@@ -289,7 +291,7 @@ vector<BITSET> list_exact(const Graph& g, int k) {
     }
     ret = unique(ret);
     if (ret.size() > 64) {
-        sep_memo[h] = { k, g, ret };
+        sep_memo[h] = {k, g, ret};
     }
     return ret;
 }

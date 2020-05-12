@@ -2,6 +2,13 @@
 #include "graph.cpp"
 #include "minimal_separator.cpp"
 
+namespace std {
+template <>
+struct hash<BITSET> {
+    inline size_t operator()(const BITSET& s) const { return get_hash(s); }
+};
+}  // namespace std
+
 bool all_feasible(const Graph& g, const BITSET& S, const BITSET& C, const unordered_set<BITSET>& min_seps, int k,
                   const unordered_set<BITSET>& is_feasible_memo);
 

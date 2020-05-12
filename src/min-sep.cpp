@@ -6,7 +6,6 @@ minimal separator 列挙による解法
 #include "lib/lower_bound.cpp"
 #include "lib/minimal_separator.cpp"
 #include "lib/tw.cpp"
-#include "lib/utiltime.cpp"
 
 using namespace std;
 
@@ -16,7 +15,7 @@ using namespace std;
 struct main_memo_t {
     int lb = 0;
     int ub = INT_MAX;
-    Graph *ans = nullptr;
+    Graph* ans = nullptr;
 };
 unordered_map<BITSET, main_memo_t> main_memo;
 
@@ -47,8 +46,8 @@ Graph solve(const Graph& g, int k) {
     auto heuristic_decomp = treedepth_heuristic(g);
     if (depth(heuristic_decomp, heuristic_decomp.root) <= k) return heuristic_decomp;
 
-    main_memo_t *main_memo_ptr;
-    // look up memo, 
+    main_memo_t* main_memo_ptr;
+    // look up memo,
     // if k < non trivial lb, return false
     // if k >= ub, return memorized ans
     if (main_memo.count(g.nodes)) {
@@ -59,8 +58,7 @@ Graph solve(const Graph& g, int k) {
         if (main_memo_ptr->ub <= k) {
             return *(main_memo_ptr->ans);
         }
-    }
-    else {
+    } else {
         main_memo[g.nodes] = {0, INT_MAX, nullptr};
         main_memo_ptr = &(main_memo[g.nodes]);
     }
@@ -88,6 +86,15 @@ Graph solve(const Graph& g, int k) {
         auto comps = components(remove(g, s));
         // 頂点数が大きいものほど失敗しやすそう（しかし、頂点数が小さいもので失敗するものをすぐに発見したほうがよさそう）
         sort(comps.begin(), comps.end(), [](auto& a, auto& b) { return a.count() < b.count(); });
+
+        // 先に treewidth lb による枝刈りをしておく
+        for (auto& C : comps) {
+            if (treedepth_lb(induced(g, C)) > k - s.count()) {
+                ok = false;
+                break;
+            }
+        }
+        if (!ok) continue;
 
         for (auto& C : comps) {
             Graph subtree = solve(induced(g, C), k - s.count());
