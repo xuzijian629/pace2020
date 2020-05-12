@@ -1,3 +1,4 @@
+#include "../../src/lib/lower_bound.cpp"
 #include "../../src/lib/minimal_separator.cpp"
 
 int main(int argc, char** argv) {
