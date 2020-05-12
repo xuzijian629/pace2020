@@ -96,6 +96,7 @@ bool operator<(const BITSET& a, const BITSET& b) {
 vector<BITSET> unique(vector<BITSET> cs) {
     sort(cs.begin(), cs.end());
     cs.erase(unique(cs.begin(), cs.end()), cs.end());
+    sort(cs.begin(), cs.end(), [](auto& p, auto& q) { return p.count() < q.count(); });
     return cs;
 }
 
@@ -216,8 +217,13 @@ Graph local(const Graph& g, const BITSET& C) {
     return ret;
 }
 
-unordered_map<hash_t, vector<BITSET>> sep_memo;
-unordered_map<hash_t, pair<Graph, int>> sep_arg_memo;
+struct sep_memo_t {
+    int k;
+    Graph g;
+    vector<BITSET> seps;
+};
+
+unordered_map<hash_t, sep_memo_t> sep_memo;
 
 vector<BITSET> list_exact_slow(const Graph& g, int k) {
     vector<BITSET> ret;
@@ -248,9 +254,19 @@ bool is_separators(const Graph& g, const vector<BITSET>& seps) {
 
 // list all minimal separators of size at most k
 vector<BITSET> list_exact(const Graph& g, int k) {
-    hash_t h = get_hash(g) ^ k;
-    if (sep_arg_memo.count(h) && sep_arg_memo[h] == make_pair(g, k)) return sep_memo[h];
     vector<BITSET> ret;
+    hash_t h = get_hash(g) ^ k;
+    if (sep_memo.count(h) && sep_memo[h].g == g) {
+        if (k <= sep_memo[h].k) {
+            for (const auto& sep : sep_memo[h].seps) {
+                if (sep.count() <= k)
+                    ret.push_back(sep);
+                else
+                    break;
+            }
+            return ret;
+        }
+    }
     int v = min_fill_vertex(g);
     BITSET X = open_neighbors(g, v);
     FOR_EACH(a, X) {
@@ -273,9 +289,9 @@ vector<BITSET> list_exact(const Graph& g, int k) {
             ret.push_back(s);
         }
     }
-    if (ret.size() > 100) {
-        sep_arg_memo[h] = make_pair(g, k);
-        sep_memo[h] = ret;
+    ret = unique(ret);
+    if (ret.size() > 64) {
+        sep_memo[h] = {k, g, ret};
     }
-    return unique(ret);
+    return ret;
 }
