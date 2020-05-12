@@ -94,34 +94,35 @@ int treewidth_exact(const Graph& g) {
 }
 
 int degeneracy(const Graph& g) {
-    int n = g.n();
-    unordered_set<int> visited;
-    unordered_map<int, int> deg;
-    vector<unordered_set<int>> D(n);
+    BITSET visited;
+    array<int, BITSET_MAX_SIZE> deg;
+    array<BITSET, BITSET_MAX_SIZE> D;
     FOR_EACH(v, g.nodes) {
         deg[v] = at(g.adj, v).count();
-        D[deg[v]].insert(v);
+        D[deg[v]].set(v);
     }
     int ret = 0;
+    int prev = 0;
+    int n = g.n();
     for (int _ = 0; _ < n; _++) {
         for (int i = 0; i < n; i++) {
-            if (D[i].empty()) continue;
+            prev = i;
+            if (!D[i].any()) continue;
             ret = max(ret, i);
-            int v = *D[i].begin();
-            D[i].erase(v);
-            visited.insert(v);
+            int v = D[i]._Find_first();
+            D[i].reset(v);
+            visited.set(v);
             FOR_EACH(w, at(g.adj, v)) {
-                if (!visited.count(w)) {
-                    assert(D[deg[w]].count(w));
-                    D[deg[w]].erase(w);
+                if (!visited.test(w)) {
+                    assert(D[deg[w]].test(w));
+                    D[deg[w]].reset(w);
                     deg[w]--;
-                    D[deg[w]].insert(w);
+                    D[deg[w]].set(w);
                 }
             }
             break;
         }
     }
-
     return ret;
 }
 
@@ -134,47 +135,47 @@ int treewidth_lb(const Graph& g) { return degeneracy(g); }
 int mindeg(Graph g) {
     Graph h(g);
     int n = g.n();
-    unordered_set<int> erased;
-    unordered_map<int, int> deg;
-    vector<unordered_set<int>> D(n);
+    BITSET erased;
+    array<int, BITSET_MAX_SIZE> deg;
+    array<BITSET, BITSET_MAX_SIZE> D;
     FOR_EACH(v, g.nodes) {
         deg[v] = at(g.adj, v).count();
-        D[deg[v]].insert(v);
+        D[deg[v]].set(v);
     }
     auto has_edge = [&](int a, int b) { return at(g.adj, a).test(b); };
     auto erase_edge = [&](int a, int b) {
-        if (!erased.count(a)) {
-            D[deg[a]].erase(a);
+        if (!erased.test(a)) {
+            D[deg[a]].reset(a);
             deg[a]--;
-            D[deg[a]].insert(a);
+            D[deg[a]].set(a);
         }
-        if (!erased.count(b)) {
-            D[deg[b]].erase(b);
+        if (!erased.test(b)) {
+            D[deg[b]].reset(b);
             deg[b]--;
-            D[deg[b]].insert(b);
+            D[deg[b]].set(b);
         }
         at(g.adj, a).reset(b);
         at(g.adj, b).reset(a);
     };
     auto add_edge = [&](int a, int b) {
-        D[deg[a]].erase(a);
+        D[deg[a]].reset(a);
         deg[a]++;
-        D[deg[a]].insert(a);
-        D[deg[b]].erase(b);
+        D[deg[a]].set(a);
+        D[deg[b]].reset(b);
         deg[b]++;
-        D[deg[b]].insert(b);
+        D[deg[b]].set(b);
         at(g.adj, a).set(b);
         at(g.adj, b).set(a);
     };
     for (int _ = 0; _ < n; _++) {
         for (int i = 0; i < n; i++) {
-            if (D[i].empty()) continue;
-            int v = *D[i].begin();
-            D[i].erase(v);
-            erased.insert(v);
+            if (!D[i].any()) continue;
+            int v = D[i]._Find_first();
+            D[i].reset(v);
+            erased.set(v);
             vector<int> neighbors;
             FOR_EACH(w, at(g.adj, v)) {
-                if (!erased.count(w)) {
+                if (!erased.test(w)) {
                     erase_edge(v, w);
                     neighbors.push_back(w);
                 }
@@ -199,13 +200,12 @@ int minfill(Graph g) {
     int n = g.n();
     for (int _ = 0; _ < n; _++) {
         int v = min_fill_vertex(g);
+        auto X = at(g.adj, v);
         FOR_EACH(a, at(g.adj, v)) {
-            FOR_EACH(b, at(g.adj, v)) {
-                if (a < b && !at(h.adj, a).test(b)) {
-                    g.add_edge(a, b);
-                    h.add_edge(a, b);
-                }
-            }
+            at(g.adj, a) |= X;
+            at(g.adj, a).reset(a);
+            at(h.adj, a) |= X;
+            at(h.adj, a).reset(a);
         }
         g.remove_node(v);
     }

@@ -173,14 +173,7 @@ vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, co
         assert(open_neighbors(g, Cb) == F);
         if (b == get_min(Cb, min_over)) {
             // ここで余分なものを列挙しないようにしてメモリを節約する
-            bool ok = true;
-            for (auto& conn : components(remove(g, F))) {
-                if (treedepth_lb(induced(g, conn)) + F.count() > td_lim) {
-                    ok = false;
-                    break;
-                }
-            }
-            if (ok) {
+            if (treedepth_lb(induced(g, Cb)) + F.count() <= td_lim) {
                 return {Na};
             } else {
                 return {};
