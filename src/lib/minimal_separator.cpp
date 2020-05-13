@@ -255,7 +255,7 @@ bool is_separators(const Graph& g, const vector<BITSET>& seps) {
 // list all minimal separators of size at most k
 vector<BITSET> list_exact(const Graph& g, int k) {
     vector<BITSET> ret;
-    hash_t h = get_hash(g) ^ k;
+    hash_t h = get_hash(g);
     if (sep_memo.count(h) && sep_memo[h].g == g) {
         if (k <= sep_memo[h].k) {
             for (const auto& sep : sep_memo[h].seps) {
