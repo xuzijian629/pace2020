@@ -8,7 +8,7 @@ int longest_path_lb(Graph g) {
     if (n <= 3) return n;
     BITSET erased;
     array<unsigned, BITSET_MAX_SIZE> deg;
-    int u; // the node with smallest degree
+    int u;  // the node with smallest degree
     {
         array<BITSET, BITSET_MAX_SIZE> D;
         FOR_EACH(v, g.nodes) {
@@ -29,7 +29,7 @@ int longest_path_lb(Graph g) {
         g.adj[v].reset(u);
     }
     // save top two longest paths
-    array<int, 2> top_lengths;
+    array<int, 2> top_lengths = {0, 0};
     FOR_EACH(nu, g.adj[u]) {
         // only when already used
         if (erased[nu]) continue;
