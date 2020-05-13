@@ -37,9 +37,6 @@ Graph solve(const Graph& g, int k) {
         return decomp;
     }
 
-    if (k < 30 && (1 << k) <= n && (1 << k) <= longest_path_lb(g)) {
-        return Graph();
-    }
     auto heuristic_decomp = treedepth_heuristic(g);
     if (depth(heuristic_decomp, heuristic_decomp.root) <= k) return heuristic_decomp;
 
@@ -124,6 +121,7 @@ int main() {
     Graph g = read_input();
     for (int k = 1;; k++) {
         if (treedepth_lb(g) > k) continue;
+        if (k < 30 && (1 << k) <= g.n() && (1 << k) <= longest_path_lb(g)) continue;
         Graph decomp = solve(g, k);
         if (decomp.n()) {
             print_decomp(decomp);
