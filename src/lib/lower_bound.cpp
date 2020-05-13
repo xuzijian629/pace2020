@@ -32,7 +32,7 @@ int longest_path_lb(Graph g) {
     array<int, 2> top_lengths = {0, 0};
     FOR_EACH(nu, g.adj[u]) {
         // only when already used
-        if (erased[nu]) continue;
+        if (erased.test(nu)) continue;
         int v = nu;
         int length = 0;
         while (true) {
