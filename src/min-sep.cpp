@@ -37,9 +37,6 @@ Graph solve(const Graph& g, int k) {
         return decomp;
     }
 
-    if (treedepth_lb(g) > k) {
-        return Graph();
-    }
     if (k < 30 && (1 << k) <= n && (1 << k) <= longest_path_lb(g)) {
         return Graph();
     }
@@ -126,6 +123,7 @@ Graph solve(const Graph& g, int k) {
 int main() {
     Graph g = read_input();
     for (int k = 1;; k++) {
+        if (treedepth_lb(g) > k) continue;
         Graph decomp = solve(g, k);
         if (decomp.n()) {
             print_decomp(decomp);
