@@ -123,7 +123,7 @@ public:
 int main() {
     for (int N = 30; N < 200; ++N) {
         if (N < 1) return 0;
-        std::ofstream ofs; ofs.open("ER" + std::to_string(N) + ".gr");
+        std::ofstream ofs; ofs.open("ER" + std::string(N < 100 ? "0" : "") + std::to_string(N) + ".gr");
         if (!ofs.is_open()) continue;
         vector<Random_Int*> ri(N + 1);
         for (int i = 1; i < N + 1; ++i) {

@@ -124,7 +124,7 @@ int main() {
     for (int n = 5; n < 20; ++n) {
         for (int m = 5; m < 20; ++m) {
             int N = n * m;
-            std::ofstream ofs; ofs.open("grid_n" + std::to_string(n) + "m" + std::to_string(m) + ".gr");
+            std::ofstream ofs; ofs.open("grid_n" + std::string(n < 10 ? "0" : "") + std::to_string(n) + "m" + std::string(m < 10 ? "0" : "") + std::to_string(m) + ".gr");
             if (!ofs.is_open()) continue;
             vector<pair<int, int>> edges;
             for (int i = 0; i < n; ++i) {
