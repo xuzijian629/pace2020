@@ -89,7 +89,13 @@ Graph solve(const Graph& g, int k) {
 
         // 先に treewidth lb による枝刈りをしておく
         for (auto& C : comps) {
-            if (treedepth_lb(induced(g, C)) > k - s.count()) {
+            int next_k = k - s.count();
+            auto next_g = induced(g, C);
+            if (treedepth_lb(next_g) > next_k) {
+                ok = false;
+                break;
+            }
+            if (next_k < 30 && (1 << next_k) <= n && (1 << next_k) <= longest_path_lb(next_g)) {
                 ok = false;
                 break;
             }
