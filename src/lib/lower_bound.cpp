@@ -1,6 +1,33 @@
 #pragma once
 #include "tw.cpp"
 
+// compute treedepth of dfs tree for lb
+// https://atcoder.jp/contests/agc009/submissions/8539379
+int td_lb_dfs_tree(const Graph& g) {
+    array<int, BITSET_MAX_SIZE> mask = {};
+    BITSET visited;
+    int ret = 0;
+    auto dfs = [&](auto& dfs, int v) -> void {
+        visited.set(v);
+        int lowest = 0;
+        FOR_EACH(u, at(g.adj, v)) {
+            if (visited.test(u)) continue;
+            dfs(dfs, u);
+            lowest |= (mask[u] & mask[v]);
+            mask[v] |= mask[u];
+        }
+        int bit = 1 << (lowest == 0 ? 0 : 32 - __builtin_clz(lowest));
+        while (mask[v] & bit) {
+            bit <<= 1;
+        }
+        mask[v] &= ~(bit - 1);
+        mask[v] |= bit;
+        ret = max(ret, 31 - __builtin_clz(mask[v]));
+    };
+    dfs(dfs, g.nodes._Find_first());
+    return ret;
+}
+
 int longest_path_lb(Graph g) {
     int n = g.n();
     if (n <= 3) return n;
@@ -27,7 +54,7 @@ int longest_path_lb(Graph g) {
         g.adj[v].reset(u);
     }
     // save top two longest paths
-    array<int, 2> top_lengths = {0, 0};
+    array<int, 2> top_lengths = {};
     FOR_EACH(nu, g.adj[u]) {
         // only when already used
         if (erased.test(nu)) continue;
@@ -99,6 +126,7 @@ int treedepth_lb(const Graph& g, int lim) {
         if (lim < 30 && (1 << lim) <= n) ret = max(ret, 32 - __builtin_clz(longest_path_lb(g)));
         ret = max(ret, lb_n_d(g));
         ret = max(ret, lb_n_m(g));
+        // ret = td_lb_dfs_tree(g);
     }
     return ret;
 }
