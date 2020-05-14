@@ -1,8 +1,6 @@
 #pragma once
 #include "tw.cpp"
 
-int treedepth_lb(const Graph& g) { return treewidth_lb(g) + 1; }
-
 int longest_path_lb(Graph g) {
     int n = g.n();
     if (n <= 3) return n;
@@ -65,4 +63,11 @@ int longest_path_lb(Graph g) {
         if (top_lengths[0] < top_lengths[1]) swap(top_lengths[0], top_lengths[1]);
     }
     return 1 + top_lengths[0] + top_lengths[1];
+}
+int treedepth_lb(const Graph& g) {
+    int ret = treewidth_lb(g) + 1;
+    if (g.n() > 2) {
+        ret = max(ret, 32 - __builtin_clz(longest_path_lb(g)));
+    }
+    return ret;
 }
