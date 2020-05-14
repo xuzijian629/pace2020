@@ -64,10 +64,39 @@ int longest_path_lb(Graph g) {
     }
     return 1 + top_lengths[0] + top_lengths[1];
 }
+
+int lb_n_m(const Graph& g) {
+    int n = g.n(), m = g.m();
+    int l = 1, r = n;
+    while (l < r - 1) {
+        int k = (l + r) / 2;
+        if (2 * m <= (k - 1) * (2 * n - k)) {
+            r = k;
+        } else {
+            l = k;
+        }
+    }
+    return r;
+}
+
+int lb_n_d(const Graph& g) {
+    int n = g.n();
+    int d = 0;
+    FOR_EACH(v, g.nodes) d = max(d, (int)at(g.adj, v).count());
+    assert(d != 1);
+    auto lb = [&](auto& lb, int n, int d) -> int {
+        if (n == 0) return 0;
+        return 1 + lb(lb, (n + d - 2) / d, d);
+    };
+    return lb(lb, n, d);
+}
+
 int treedepth_lb(const Graph& g) {
     int ret = treewidth_lb(g) + 1;
     if (g.n() > 2) {
         ret = max(ret, 32 - __builtin_clz(longest_path_lb(g)));
+        ret = max(ret, lb_n_d(g));
+        ret = max(ret, lb_n_m(g));
     }
     return ret;
 }
