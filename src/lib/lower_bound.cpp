@@ -91,10 +91,12 @@ int lb_n_d(const Graph& g) {
     return lb(lb, n, d);
 }
 
-int treedepth_lb(const Graph& g) {
+// if clearly td_lb(g) <= lim, don't check it
+int treedepth_lb(const Graph& g, int lim) {
     int ret = treewidth_lb(g) + 1;
-    if (g.n() > 2) {
-        ret = max(ret, 32 - __builtin_clz(longest_path_lb(g)));
+    int n = g.n();
+    if (n > 2) {
+        if (lim < 30 && (1 << lim) <= n) ret = max(ret, 32 - __builtin_clz(longest_path_lb(g)));
         ret = max(ret, lb_n_d(g));
         ret = max(ret, lb_n_m(g));
     }
