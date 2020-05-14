@@ -13,6 +13,7 @@ using namespace std;
 // 不可能なときは empty なグラフを返す
 
 struct main_memo_t {
+    Graph g;
     int lb = 0;
     int ub = INT_MAX;
     Graph* ans = nullptr;
@@ -44,7 +45,7 @@ Graph solve(const Graph& g, int k) {
     // look up memo,
     // if k < non trivial lb, return false
     // if k >= ub, return memorized ans
-    if (main_memo.count(g.nodes)) {
+    if (main_memo.count(g.nodes) && main_memo[g.nodes].g == g) {
         main_memo_ptr = &(main_memo[g.nodes]);
         if (k < main_memo_ptr->lb) {
             return Graph();
@@ -53,7 +54,7 @@ Graph solve(const Graph& g, int k) {
             return *(main_memo_ptr->ans);
         }
     } else {
-        main_memo[g.nodes] = {0, INT_MAX, nullptr};
+        main_memo[g.nodes] = {g, 0, INT_MAX, nullptr};
         main_memo_ptr = &(main_memo[g.nodes]);
     }
 
