@@ -125,11 +125,13 @@ constexpr int mod = (1 << 29) - 1;
 using hash_t = int;
 
 struct Init {
-    array<int, BITSET_MAX_SIZE> pows;
+    array<int, BITSET_MAX_SIZE> pows, pows2;
     Init() {
         pows[0] = 1;
+        pows2[0] = 1;
         for (int i = 1; i < BITSET_MAX_SIZE; i++) {
             pows[i] = (long long)pows[i - 1] * 1333 % mod;
+            pows2[i] = (long long)pows2[i - 1] * 629 % mod;
         }
     }
 } init;
@@ -146,7 +148,7 @@ hash_t get_hash(const BITSET& v) {
 hash_t get_hash(const Graph& g) {
     hash_t ret = get_hash(g.nodes);
     FOR_EACH(a, g.nodes) {
-        ret += (long long)get_hash(at(g.adj, a)) * 629;
+        ret += (long long)get_hash(at(g.adj, a)) * init.pows2[a] % mod;
         if (ret >= mod) ret -= mod;
     }
     return ret;
