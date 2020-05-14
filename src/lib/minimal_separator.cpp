@@ -121,7 +121,7 @@ vector<vector<int>> compute_P(const Graph& g, vector<vector<int>> P, BITSET forb
     return P;
 }
 
-constexpr int mod = 1e9 + 7;
+constexpr int mod = (1 << 29) - 1;
 using hash_t = int;
 
 struct Init {
@@ -145,7 +145,10 @@ hash_t get_hash(const BITSET& v) {
 
 hash_t get_hash(const Graph& g) {
     hash_t ret = get_hash(g.nodes);
-    FOR_EACH(a, g.nodes) { ret ^= get_hash(at(g.adj, a)); }
+    FOR_EACH(a, g.nodes) {
+        ret += (long long)get_hash(at(g.adj, a)) * 629;
+        if (ret >= mod) ret -= mod;
+    }
     return ret;
 }
 
