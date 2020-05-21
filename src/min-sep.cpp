@@ -73,6 +73,22 @@ Graph solve(const Graph& g, int k) {
         }
     }
 
+    // まじで効果ないのでとりあえず封印
+    // BITSET has_forbidden;
+    // array<BITSET, BITSET_MAX_SIZE> forbidden;
+    // FOR_EACH(a, g.nodes) {
+    //     FOR_EACH(b, g.nodes) {
+    //         BITSET sa, sb;
+    //         sa.set(a);
+    //         sb.set(b);
+    //         // b -> a の順に選ぶ
+    //         if (is_subset(difference(open_neighbors(g, a), sb), difference(open_neighbors(g, b), sa))) {
+    //             forbidden[a].set(b);
+    //             has_forbidden.set(a);
+    //         }
+    //     }
+    // }
+
     // separator によって 分解される各連結成分の td は 1 以上
     // サイズ k - 1 までの separator を列挙すればいい
     auto seps = list_exact(g, min(k - 1, treewidth_ub(g) + 1));
@@ -82,6 +98,16 @@ Graph solve(const Graph& g, int k) {
     }
 
     for (auto& s : seps) {
+        // if (intersection(s, has_forbidden).any()) {
+        //     bool ok = true;
+        //     FOR_EACH(a, intersection(s, has_forbidden)) {
+        //         if (difference(forbidden[a], s).any()) {
+        //             ok = false;
+        //             break;
+        //         }
+        //     }
+        //     if (!ok) continue;
+        // }
         Graph decomp;
         vector<int> nodes;
         FOR_EACH(v, s) nodes.push_back(v);
