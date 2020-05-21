@@ -5,6 +5,7 @@ minimal separator 列挙による解法
 #include "lib/balanced_separator.cpp"
 #include "lib/lower_bound.cpp"
 #include "lib/minimal_separator.cpp"
+#include "lib/reorder.cpp"
 #include "lib/tw.cpp"
 
 using namespace std;
@@ -129,10 +130,13 @@ Graph solve(const Graph& g, int k) {
 
 int main() {
     Graph g = read_input();
+    auto ord = find_good_order(g);
+    g = reorder(g, ord.first);
     for (int k = 1;; k++) {
         if (prune_by_td_lb(g, k)) continue;
         Graph decomp = solve(g, k);
         if (decomp.n()) {
+            decomp = reorder(decomp, ord.second);
             print_decomp(decomp);
             break;
         }
