@@ -7,9 +7,9 @@ int treedepth_exact(const Graph& g) {
     return depth(decomp, decomp.root);
 }
 
-constexpr int min_n = 15;
-constexpr int max_n = 20;
-constexpr int max_precompute_num = 50;
+constexpr int min_n = 20;
+constexpr int max_n = 30;
+constexpr int max_precompute_num = 1000;
 
 vector<BITSET> BLOCKS;
 vector<int> BLOCK_TD;
@@ -140,7 +140,7 @@ void init_blocks(const Graph& g) {
     int n = g.n();
     int k = max(2, (n + min_n - 1) / min_n);
     bool finish = false;
-    for (int i = 0; i < 30; i++) {
+    for (int i = 0; i < 2 * max_precompute_num; i++) {
         if (finish) break;
         auto blocks = kmeans(g, k);
         for (auto& C : blocks) {
