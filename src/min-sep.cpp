@@ -137,13 +137,10 @@ Graph solve(const Graph& g, int k) {
 }
 
 Graph treedepth_decomp(Graph g) {
-    // auto ord = find_good_order(g);
-    // g = reorder(g, ord.first);
     for (int k = 1;; k++) {
         if (prune_by_td_lb(g, k)) continue;
         Graph decomp = solve(g, k);
         if (decomp.n()) {
-            // decomp = reorder(decomp, ord.second);
             return decomp;
         }
     }
