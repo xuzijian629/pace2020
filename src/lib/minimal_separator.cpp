@@ -178,7 +178,7 @@ vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, co
     auto Na = open_neighbors(g, A);
     if (A.count() > Cb.count()) return {};
     if (!is_subset(F, open_neighbors(g, Cb))) return {};
-    if (F.count() <= k && Na == F) {
+    if (Na == F) {
         assert(open_neighbors(g, Cb) == F);
         if (b == get_min(Cb, min_over))
             return {Na};
@@ -296,7 +296,7 @@ vector<BITSET> list_exact(const Graph& g, int k) {
                 auto Na = open_neighbors(g, a);
                 auto Cb = components_contain(g, Na, b);
                 A = components_contain(g, open_neighbors(g, Cb), a);
-                if (get_min(A) != a) continue;
+                if (get_min(A, &X) != a) continue;
                 for (auto& s : enum_rec(g, k, a, b, A, F, &X, Cb)) {
                     ret.push_back(s);
                 }
