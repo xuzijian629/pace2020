@@ -21,25 +21,9 @@ struct main_memo_t {
 unordered_map<BITSET, main_memo_t> main_memo;
 
 Graph solve(const Graph& g, int k) {
-    // separator が存在しない <=> g が完全グラフ
-    int n = g.n();
-    if (n * (n - 1) / 2 == g.m()) {
-        if (n > k) {
-            return Graph();
-        }
-        Graph decomp;
-        vector<int> nodes;
-        FOR_EACH(v, g.nodes) nodes.push_back(v);
-        decomp.add_node(nodes[0]);
-        decomp.root = nodes[0];
-        for (int i = 1; i < nodes.size(); i++) {
-            decomp.add_edge(nodes[i - 1], nodes[i]);
-        }
-        return decomp;
+    if (g.n() == 1) {
+        return Graph(g.nodes._Find_first());
     }
-
-    auto heuristic_decomp = treedepth_heuristic(g);
-    if (depth(heuristic_decomp, heuristic_decomp.root) <= k) return heuristic_decomp;
 
     main_memo_t* main_memo_ptr;
     // look up memo,
@@ -56,6 +40,36 @@ Graph solve(const Graph& g, int k) {
     } else {
         main_memo[g.nodes] = {0, INT_MAX, nullptr};
         main_memo_ptr = &(main_memo[g.nodes]);
+    }
+
+    auto heuristic_decomp = treedepth_heuristic(g);
+    int heur_depth = depth(heuristic_decomp, heuristic_decomp.root);
+    if (heur_depth <= k) {
+        main_memo_ptr->ub = min(main_memo_ptr->ub, heur_depth);
+        main_memo_ptr->ans = new Graph();
+        *(main_memo_ptr->ans) = heuristic_decomp;
+        return *(main_memo_ptr->ans);
+    }
+
+    // apex vertex があれば選ぶ
+    FOR_EACH(v, g.nodes) {
+        if (at(g.adj, v).count() == g.n() - 1) {
+            Graph decomp(v);
+            BITSET rem;
+            rem.set(v);
+            for (auto& C : components(remove(g, rem))) {
+                Graph subtree = solve(induced(g, C), k - 1);
+                if (!subtree.n()) {
+                    main_memo_ptr->lb = max(main_memo_ptr->lb, k + 1);
+                    return Graph();
+                }
+                merge(decomp, subtree, v, subtree.root);
+            }
+            main_memo_ptr->ub = min(main_memo_ptr->ub, k);
+            main_memo_ptr->ans = new Graph();
+            *(main_memo_ptr->ans) = decomp;
+            return *(main_memo_ptr->ans);
+        }
     }
 
     // separator によって 分解される各連結成分の td は 1 以上
