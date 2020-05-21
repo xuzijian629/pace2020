@@ -9,7 +9,7 @@ int treedepth_exact(const Graph& g) {
 
 constexpr int min_n = 20;
 constexpr int max_n = 30;
-constexpr int max_precompute_num = 1000;
+constexpr int max_precompute_num = 500;
 
 vector<BITSET> BLOCKS;
 vector<int> BLOCK_TD;
