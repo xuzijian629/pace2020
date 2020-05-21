@@ -119,7 +119,6 @@ int lb_n_d(const Graph& g) {
 }
 
 // return true if treedepth_lb(g) > lim
-// g の treedepth は必ず 3 以上
 bool prune_by_td_lb(const Graph& g, int lim) {
     int n = g.n();
     if (n <= 2) return n > lim;
