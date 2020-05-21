@@ -5,6 +5,7 @@ minimal separator 列挙による解法
 #include "lib/balanced_separator.cpp"
 #include "lib/lower_bound.cpp"
 #include "lib/minimal_separator.cpp"
+#include "lib/reorder.cpp"
 #include "lib/tw.cpp"
 
 using namespace std;
@@ -12,6 +13,7 @@ using namespace std;
 // treedepth k 以下の分解を作ることができるか
 // 不可能なときは empty なグラフを返す
 
+// induced subgraph なので g 覚えなくて良い
 struct main_memo_t {
     int lb = 0;
     int ub = INT_MAX;
@@ -20,25 +22,9 @@ struct main_memo_t {
 unordered_map<BITSET, main_memo_t> main_memo;
 
 Graph solve(const Graph& g, int k) {
-    // separator が存在しない <=> g が完全グラフ
-    int n = g.n();
-    if (n * (n - 1) / 2 == g.m()) {
-        if (n > k) {
-            return Graph();
-        }
-        Graph decomp;
-        vector<int> nodes;
-        FOR_EACH(v, g.nodes) nodes.push_back(v);
-        decomp.add_node(nodes[0]);
-        decomp.root = nodes[0];
-        for (int i = 1; i < nodes.size(); i++) {
-            decomp.add_edge(nodes[i - 1], nodes[i]);
-        }
-        return decomp;
+    if (g.n() == 1) {
+        return Graph(g.nodes._Find_first());
     }
-
-    auto heuristic_decomp = treedepth_heuristic(g);
-    if (depth(heuristic_decomp, heuristic_decomp.root) <= k) return heuristic_decomp;
 
     main_memo_t* main_memo_ptr;
     // look up memo,
@@ -57,6 +43,52 @@ Graph solve(const Graph& g, int k) {
         main_memo_ptr = &(main_memo[g.nodes]);
     }
 
+    auto heuristic_decomp = treedepth_heuristic(g);
+    int heur_depth = depth(heuristic_decomp, heuristic_decomp.root);
+    if (heur_depth <= k) {
+        main_memo_ptr->ub = min(main_memo_ptr->ub, heur_depth);
+        main_memo_ptr->ans = new Graph();
+        *(main_memo_ptr->ans) = heuristic_decomp;
+        return *(main_memo_ptr->ans);
+    }
+
+    // apex vertex があれば選ぶ
+    FOR_EACH(v, g.nodes) {
+        if (at(g.adj, v).count() == g.n() - 1) {
+            Graph decomp(v);
+            BITSET rem;
+            rem.set(v);
+            for (auto& C : components(remove(g, rem))) {
+                Graph subtree = solve(induced(g, C), k - 1);
+                if (!subtree.n()) {
+                    main_memo_ptr->lb = max(main_memo_ptr->lb, k + 1);
+                    return Graph();
+                }
+                merge(decomp, subtree, v, subtree.root);
+            }
+            main_memo_ptr->ub = min(main_memo_ptr->ub, k);
+            main_memo_ptr->ans = new Graph();
+            *(main_memo_ptr->ans) = decomp;
+            return *(main_memo_ptr->ans);
+        }
+    }
+
+    // まじで効果ないのでとりあえず封印
+    // BITSET has_forbidden;
+    // array<BITSET, BITSET_MAX_SIZE> forbidden;
+    // FOR_EACH(a, g.nodes) {
+    //     FOR_EACH(b, g.nodes) {
+    //         BITSET sa, sb;
+    //         sa.set(a);
+    //         sb.set(b);
+    //         // b -> a の順に選ぶ
+    //         if (is_subset(difference(open_neighbors(g, a), sb), difference(open_neighbors(g, b), sa))) {
+    //             forbidden[a].set(b);
+    //             has_forbidden.set(a);
+    //         }
+    //     }
+    // }
+
     // separator によって 分解される各連結成分の td は 1 以上
     // サイズ k - 1 までの separator を列挙すればいい
     auto seps = list_exact(g, min(k - 1, treewidth_ub(g) + 1));
@@ -66,6 +98,16 @@ Graph solve(const Graph& g, int k) {
     }
 
     for (auto& s : seps) {
+        // if (intersection(s, has_forbidden).any()) {
+        //     bool ok = true;
+        //     FOR_EACH(a, intersection(s, has_forbidden)) {
+        //         if (difference(forbidden[a], s).any()) {
+        //             ok = false;
+        //             break;
+        //         }
+        //     }
+        //     if (!ok) continue;
+        // }
         Graph decomp;
         vector<int> nodes;
         FOR_EACH(v, s) nodes.push_back(v);
@@ -83,13 +125,8 @@ Graph solve(const Graph& g, int k) {
 
         // 先に treewidth lb による枝刈りをしておく
         for (auto& C : comps) {
-            int next_k = k - s.count();
-            auto next_g = induced(g, C);
-            if (treedepth_lb(next_g) > next_k) {
-                ok = false;
-                break;
-            }
-            if (next_k < 30 && (1 << next_k) <= n && (1 << next_k) <= longest_path_lb(next_g)) {
+            int lim = k - s.count();
+            if (prune_by_td_lb(induced(g, C), lim)) {
                 ok = false;
                 break;
             }
@@ -119,11 +156,13 @@ Graph solve(const Graph& g, int k) {
 
 int main() {
     Graph g = read_input();
+    auto ord = find_good_order(g);
+    g = reorder(g, ord.first);
     for (int k = 1;; k++) {
-        if (treedepth_lb(g) > k) continue;
-        if (k < 30 && (1 << k) <= g.n() && (1 << k) <= longest_path_lb(g)) continue;
+        if (prune_by_td_lb(g, k)) continue;
         Graph decomp = solve(g, k);
         if (decomp.n()) {
+            decomp = reorder(decomp, ord.second);
             print_decomp(decomp);
             break;
         }

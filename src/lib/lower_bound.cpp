@@ -1,7 +1,32 @@
 #pragma once
 #include "tw.cpp"
 
-int treedepth_lb(const Graph& g) { return treewidth_lb(g) + 1; }
+// compute treedepth of dfs tree for lb
+// https://atcoder.jp/contests/agc009/submissions/8539379
+int td_lb_dfs_tree(const Graph& g) {
+    array<int, BITSET_MAX_SIZE> mask = {};
+    BITSET visited;
+    int ret = 0;
+    auto dfs = [&](auto& dfs, int v) -> void {
+        visited.set(v);
+        int lowest = 0;
+        FOR_EACH(u, at(g.adj, v)) {
+            if (visited.test(u)) continue;
+            dfs(dfs, u);
+            lowest |= (mask[u] & mask[v]);
+            mask[v] |= mask[u];
+        }
+        int bit = 1 << (lowest == 0 ? 0 : 32 - __builtin_clz(lowest));
+        while (mask[v] & bit) {
+            bit <<= 1;
+        }
+        mask[v] &= ~(bit - 1);
+        mask[v] |= bit;
+        ret = max(ret, 31 - __builtin_clz(mask[v]));
+    };
+    dfs(dfs, g.nodes._Find_first());
+    return ret;
+}
 
 int longest_path_lb(Graph g) {
     int n = g.n();
@@ -29,7 +54,7 @@ int longest_path_lb(Graph g) {
         g.adj[v].reset(u);
     }
     // save top two longest paths
-    array<int, 2> top_lengths = {0, 0};
+    array<int, 2> top_lengths = {};
     FOR_EACH(nu, g.adj[u]) {
         // only when already used
         if (erased.test(nu)) continue;
@@ -65,4 +90,44 @@ int longest_path_lb(Graph g) {
         if (top_lengths[0] < top_lengths[1]) swap(top_lengths[0], top_lengths[1]);
     }
     return 1 + top_lengths[0] + top_lengths[1];
+}
+
+int lb_n_m(const Graph& g) {
+    int n = g.n(), m = g.m();
+    int l = 1, r = n;
+    while (l < r - 1) {
+        int k = (l + r) / 2;
+        if (2 * m <= (k - 1) * (2 * n - k)) {
+            r = k;
+        } else {
+            l = k;
+        }
+    }
+    return r;
+}
+
+int lb_n_d(const Graph& g) {
+    int n = g.n();
+    int d = 0;
+    FOR_EACH(v, g.nodes) d = max(d, (int)at(g.adj, v).count());
+    assert(d != 1);
+    auto lb = [&](auto& lb, int n, int d) -> int {
+        if (n == 0) return 0;
+        return 1 + lb(lb, (n + d - 2) / d, d);
+    };
+    return lb(lb, n, d);
+}
+
+// return true if treedepth_lb(g) > lim
+bool prune_by_td_lb(const Graph& g, int lim) {
+    int n = g.n();
+    if (n <= 2) return n > lim;
+    if (treewidth_lb(g) + 1 > lim) return true;
+    if (lim < 30 && (1 << lim) <= g.n()) {
+        if (32 - __builtin_clz(longest_path_lb(g)) > lim) return true;
+    }
+    if (lb_n_m(g) > lim) return true;
+    if (lb_n_d(g) > lim) return true;
+    // if (td_lb_dfs_tree(g) > lim) return true;
+    return false;
 }

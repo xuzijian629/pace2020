@@ -75,12 +75,13 @@ BITSET components_contain(const Graph& g, const BITSET& sep, int v) {
     return ret;
 }
 
-BITSET compute_A_(const Graph& g, const BITSET& A, int b, int v) {
+BITSET compute_A_(const Graph& g, const BITSET& A, int b, int v, BITSET* Cb) {
     BITSET C(A);
     C.set(v);
     auto rem = close_neighbors(g, C);
     if (rem.test(b)) return BITSET();
-    auto N = open_neighbors(g, components_contain(g, rem, b));
+    *Cb = components_contain(g, rem, b);
+    auto N = open_neighbors(g, *Cb);
     return components_contain(g, N, v);
 }
 
@@ -103,9 +104,15 @@ vector<BITSET> unique(vector<BITSET> cs) {
 vector<vector<int>> compute_P(const Graph& g, vector<vector<int>> P, BITSET forbidden) {
     int n = P.size();
     for (auto& a : P) forbidden.set(a[0]);
+    using T = pair<int, int>;
+    priority_queue<T, vector<T>, greater<>> que;
+    for (int i = 0; i < n; i++) que.emplace(1, i);
     while (1) {
         bool update = false;
-        for (int i = 0; i < n; i++) {
+        while (!que.empty()) {
+            auto top = que.top();
+            que.pop();
+            int i = top.second;
             int e = P[i].back();
             auto dif = difference(at(g.adj, e), forbidden);
             int a = dif._Find_first();
@@ -113,6 +120,7 @@ vector<vector<int>> compute_P(const Graph& g, vector<vector<int>> P, BITSET forb
                 P[i].push_back(a);
                 forbidden.set(a);
                 update = true;
+                que.emplace(top.first + 1, i);
                 break;
             }
         }
@@ -121,15 +129,17 @@ vector<vector<int>> compute_P(const Graph& g, vector<vector<int>> P, BITSET forb
     return P;
 }
 
-constexpr int mod = 1e9 + 7;
+constexpr int mod = (1 << 29) - 1;
 using hash_t = int;
 
 struct Init {
-    array<int, BITSET_MAX_SIZE> pows;
+    array<int, BITSET_MAX_SIZE> pows, pows2;
     Init() {
         pows[0] = 1;
+        pows2[0] = 1;
         for (int i = 1; i < BITSET_MAX_SIZE; i++) {
             pows[i] = (long long)pows[i - 1] * 1333 % mod;
+            pows2[i] = (long long)pows2[i - 1] * 629 % mod;
         }
     }
 } init;
@@ -145,7 +155,10 @@ hash_t get_hash(const BITSET& v) {
 
 hash_t get_hash(const Graph& g) {
     hash_t ret = get_hash(g.nodes);
-    FOR_EACH(a, g.nodes) { ret ^= get_hash(at(g.adj, a)); }
+    FOR_EACH(a, g.nodes) {
+        ret += (long long)get_hash(at(g.adj, a)) * init.pows2[a] % mod;
+        if (ret >= mod) ret -= mod;
+    }
     return ret;
 }
 
@@ -157,16 +170,15 @@ bool operator==(const Graph& g1, const Graph& g2) {
     return true;
 }
 
-constexpr int r_prune = 10;
-vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, const BITSET& F, BITSET* min_over) {
+constexpr int r_prune = 5;
+vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, const BITSET& F, BITSET* min_over,
+                        const BITSET& Cb) {
     // min_over = nullptr は、全体集合の代わり（毎回全体集合を指定すると重いので）
     if (F.count() > k) return {};
-    if (a != get_min(A, min_over)) return {};
     auto Na = open_neighbors(g, A);
-    BITSET Cb = components_contain(g, close_neighbors(g, A), b);
     if (A.count() > Cb.count()) return {};
     if (!is_subset(F, open_neighbors(g, Cb))) return {};
-    if (F.count() <= k && Na == F) {
+    if (Na == F) {
         assert(open_neighbors(g, Cb) == F);
         if (b == get_min(Cb, min_over))
             return {Na};
@@ -192,13 +204,17 @@ vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, co
     int v = dif._Find_first();
     auto F_(F);
     F_.set(v);
-    for (auto& s : enum_rec(g, k, a, b, A, F_, min_over)) {
+    for (auto& s : enum_rec(g, k, a, b, A, F_, min_over, Cb)) {
         ret.push_back(s);
     }
-    auto A_ = compute_A_(g, A, b, v);
-    if (A_.any()) {
-        for (auto& s : enum_rec(g, k, a, b, A_, F, min_over)) {
-            ret.push_back(s);
+    bool can_cut = (min_over ? (*min_over).test(v) && v < a : v < a);
+    if (!can_cut) {
+        BITSET nxtCb;
+        auto A_ = compute_A_(g, A, b, v, &nxtCb);
+        if (A_.any()) {
+            for (auto& s : enum_rec(g, k, a, b, A_, F, min_over, nxtCb)) {
+                ret.push_back(s);
+            }
         }
     }
     return unique(ret);
@@ -233,8 +249,11 @@ vector<BITSET> list_exact_slow(const Graph& g, int k) {
             // a と b の順序は重要
             if (!is_adjacent(g, a, b)) {
                 BITSET A, F = intersection(open_neighbors(g, a), open_neighbors(g, b)), *min_over = nullptr;
-                A.set(a);
-                for (auto& s : enum_rec(g, k, a, b, A, F, min_over)) {
+                auto Na = open_neighbors(g, a);
+                auto Cb = components_contain(g, Na, b);
+                A = components_contain(g, open_neighbors(g, Cb), a);
+                if (get_min(A) != a) continue;
+                for (auto& s : enum_rec(g, k, a, b, A, F, min_over, Cb)) {
                     ret.push_back(s);
                 }
             }
@@ -274,8 +293,11 @@ vector<BITSET> list_exact(const Graph& g, int k) {
             if (a == b) continue;
             if (!is_adjacent(g, a, b)) {
                 BITSET A, F = intersection(open_neighbors(g, a), open_neighbors(g, b));
-                A.set(a);
-                for (auto& s : enum_rec(g, k, a, b, A, F, &X)) {
+                auto Na = open_neighbors(g, a);
+                auto Cb = components_contain(g, Na, b);
+                A = components_contain(g, open_neighbors(g, Cb), a);
+                if (get_min(A, &X) != a) continue;
+                for (auto& s : enum_rec(g, k, a, b, A, F, &X, Cb)) {
                     ret.push_back(s);
                 }
             }
