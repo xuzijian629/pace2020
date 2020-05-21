@@ -118,15 +118,17 @@ int lb_n_d(const Graph& g) {
     return lb(lb, n, d);
 }
 
-// if clearly td_lb(g) <= lim, don't check it
-int treedepth_lb(const Graph& g, int lim) {
-    int ret = treewidth_lb(g) + 1;
+// return true if treedepth_lb(g) > lim
+// g の treedepth は必ず 3 以上
+bool prune_by_td_lb(const Graph& g, int lim) {
     int n = g.n();
-    if (n > 2) {
-        if (lim < 30 && (1 << lim) <= n) ret = max(ret, 32 - __builtin_clz(longest_path_lb(g)));
-        ret = max(ret, lb_n_d(g));
-        ret = max(ret, lb_n_m(g));
-        // ret = td_lb_dfs_tree(g);
+    if (n <= 2) return n > lim;
+    if (treewidth_lb(g) + 1 > lim) return true;
+    if (lim < 30 && (1 << lim) <= g.n()) {
+        if (32 - __builtin_clz(longest_path_lb(g)) > lim) return true;
     }
-    return ret;
+    if (lb_n_m(g) > lim) return true;
+    if (lb_n_d(g) > lim) return true;
+    // if (td_lb_dfs_tree(g) > lim) return true;
+    return false;
 }

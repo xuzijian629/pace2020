@@ -99,7 +99,7 @@ Graph solve(const Graph& g, int k) {
         // 先に treewidth lb による枝刈りをしておく
         for (auto& C : comps) {
             int lim = k - s.count();
-            if (treedepth_lb(induced(g, C), lim) > lim) {
+            if (prune_by_td_lb(induced(g, C), lim)) {
                 ok = false;
                 break;
             }
@@ -130,7 +130,7 @@ Graph solve(const Graph& g, int k) {
 int main() {
     Graph g = read_input();
     for (int k = 1;; k++) {
-        if (treedepth_lb(g, k) > k) continue;
+        if (prune_by_td_lb(g, k)) continue;
         Graph decomp = solve(g, k);
         if (decomp.n()) {
             print_decomp(decomp);
