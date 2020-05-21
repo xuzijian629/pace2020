@@ -5,6 +5,7 @@ minimal separator 列挙による解法
 #include "lib/balanced_separator.cpp"
 #include "lib/lower_bound.cpp"
 #include "lib/minimal_separator.cpp"
+#include "lib/precompute.cpp"
 #include "lib/reorder.cpp"
 #include "lib/tw.cpp"
 
@@ -98,6 +99,14 @@ Graph solve(const Graph& g, int k) {
     }
 
     for (auto& s : seps) {
+        bool ok = true;
+        for (int i = 0; i < BLOCKS.size(); i++) {
+            if (intersection(s, BLOCKS[i]).none() && s.count() + BLOCK_TD[i] > k) {
+                ok = false;
+                break;
+            }
+        }
+        if (!ok) continue;
         // if (intersection(s, has_forbidden).any()) {
         //     bool ok = true;
         //     FOR_EACH(a, intersection(s, has_forbidden)) {
@@ -118,7 +127,6 @@ Graph solve(const Graph& g, int k) {
         }
 
         vector<Graph> subtrees;
-        bool ok = true;
         auto comps = components(remove(g, s));
         // 頂点数が大きいものほど失敗しやすそう（しかし、頂点数が小さいもので失敗するものをすぐに発見したほうがよさそう）
         sort(comps.begin(), comps.end(), [](auto& a, auto& b) { return a.count() < b.count(); });
@@ -154,17 +162,25 @@ Graph solve(const Graph& g, int k) {
     return Graph();
 }
 
-int main() {
-    Graph g = read_input();
-    auto ord = find_good_order(g);
-    g = reorder(g, ord.first);
+Graph treedepth_decomp(Graph g) {
+    // auto ord = find_good_order(g);
+    // g = reorder(g, ord.first);
     for (int k = 1;; k++) {
         if (prune_by_td_lb(g, k)) continue;
         Graph decomp = solve(g, k);
         if (decomp.n()) {
-            decomp = reorder(decomp, ord.second);
-            print_decomp(decomp);
-            break;
+            // decomp = reorder(decomp, ord.second);
+            return decomp;
         }
     }
+}
+
+int main() {
+    Graph g = read_input();
+    auto start = chrono::steady_clock::now();
+    if (g.n() > max_n) init_blocks(g);
+    auto finish = chrono::steady_clock::now();
+    cerr << "init finished with " << BLOCKS.size() << " blocks ("
+         << chrono::duration_cast<chrono::milliseconds>(finish - start).count() << " msec)" << endl;
+    print_decomp(treedepth_decomp(g));
 }
