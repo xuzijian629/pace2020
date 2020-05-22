@@ -135,6 +135,8 @@ vector<BITSET> kmeans(const Graph& g, int k, int num_iter = 5) {
     }
 }
 
+bool is_connected(const Graph& g) { return components(g).size() == 1; }
+
 void init_blocks(const Graph& g) {
     prepare_dist(g);
     int n = g.n();
@@ -144,6 +146,7 @@ void init_blocks(const Graph& g) {
         if (finish) break;
         auto blocks = kmeans(g, k);
         for (auto& C : blocks) {
+            assert(is_connected(induced(g, C)));
             int size = C.count();
             if (min_n <= size && size <= max_n) {
                 BLOCKS.push_back(C);
