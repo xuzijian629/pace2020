@@ -85,7 +85,7 @@ Graph solve(const Graph& g, int k) {
     for (auto& s : seps) {
         bool ok = true;
         for (int i = 0; i < BLOCKS.size(); i++) {
-            if (is_subset(BLOCKS[i], g.nodes) && intersection(BLOCKS[i], s).none() && k > s.count() + BLOCK_TD[i]) {
+            if (is_subset(BLOCKS[i], g.nodes) && intersection(BLOCKS[i], s).none() && k < s.count() + BLOCK_TD[i]) {
                 ok = false;
                 break;
             }
