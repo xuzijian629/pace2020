@@ -85,26 +85,16 @@ Graph solve(const Graph& g, int k) {
     for (auto& s : seps) {
         bool ok = true;
         for (int i = 0; i < BLOCKS.size(); i++) {
-            if (intersection(s, BLOCKS[i]).none() && s.count() + BLOCK_TD[i] > k) {
+            if (is_subset(BLOCKS[i], g.nodes) && intersection(BLOCKS[i], s).none() && k > s.count() + BLOCK_TD[i]) {
                 ok = false;
                 break;
             }
         }
         if (!ok) continue;
-        Graph decomp;
-        vector<int> nodes;
-        FOR_EACH(v, s) nodes.push_back(v);
-        decomp.add_node(nodes[0]);
-        decomp.root = nodes[0];
-        for (int i = 1; i < nodes.size(); i++) {
-            decomp.add_edge(nodes[i - 1], nodes[i]);
-        }
 
-        vector<Graph> subtrees;
         auto comps = components(remove(g, s));
         // 頂点数が大きいものほど失敗しやすそう（しかし、頂点数が小さいもので失敗するものをすぐに発見したほうがよさそう）
         sort(comps.begin(), comps.end(), [](auto& a, auto& b) { return a.count() < b.count(); });
-
         // 先に treewidth lb による枝刈りをしておく
         for (auto& C : comps) {
             int lim = k - s.count();
@@ -115,6 +105,16 @@ Graph solve(const Graph& g, int k) {
         }
         if (!ok) continue;
 
+        Graph decomp;
+        vector<int> nodes;
+        FOR_EACH(v, s) nodes.push_back(v);
+        decomp.add_node(nodes[0]);
+        decomp.root = nodes[0];
+        for (int i = 1; i < nodes.size(); i++) {
+            decomp.add_edge(nodes[i - 1], nodes[i]);
+        }
+
+        vector<Graph> subtrees;
         for (auto& C : comps) {
             Graph subtree = solve(induced(g, C), k - s.count());
             if (!subtree.n()) {
