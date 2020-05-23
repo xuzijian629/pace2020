@@ -102,11 +102,9 @@ int degeneracy(const Graph& g) {
         D[deg[v]].set(v);
     }
     int ret = 0;
-    int prev = 0;
     int n = g.n();
     for (int _ = 0; _ < n; _++) {
         for (int i = 0; i < n; i++) {
-            prev = i;
             if (!D[i].any()) continue;
             ret = max(ret, i);
             int v = D[i]._Find_first();

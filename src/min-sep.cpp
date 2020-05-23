@@ -5,6 +5,7 @@ minimal separator 列挙による解法
 #include "lib/balanced_separator.cpp"
 #include "lib/lower_bound.cpp"
 #include "lib/minimal_separator.cpp"
+#include "lib/precompute.cpp"
 #include "lib/reorder.cpp"
 #include "lib/tw.cpp"
 
@@ -73,22 +74,6 @@ Graph solve(const Graph& g, int k) {
         }
     }
 
-    // まじで効果ないのでとりあえず封印
-    // BITSET has_forbidden;
-    // array<BITSET, BITSET_MAX_SIZE> forbidden;
-    // FOR_EACH(a, g.nodes) {
-    //     FOR_EACH(b, g.nodes) {
-    //         BITSET sa, sb;
-    //         sa.set(a);
-    //         sb.set(b);
-    //         // b -> a の順に選ぶ
-    //         if (is_subset(difference(open_neighbors(g, a), sb), difference(open_neighbors(g, b), sa))) {
-    //             forbidden[a].set(b);
-    //             has_forbidden.set(a);
-    //         }
-    //     }
-    // }
-
     // separator によって 分解される各連結成分の td は 1 以上
     // サイズ k - 1 までの separator を列挙すればいい
     auto seps = list_exact(g, min(k - 1, treewidth_ub(g) + 1));
@@ -98,31 +83,18 @@ Graph solve(const Graph& g, int k) {
     }
 
     for (auto& s : seps) {
-        // if (intersection(s, has_forbidden).any()) {
-        //     bool ok = true;
-        //     FOR_EACH(a, intersection(s, has_forbidden)) {
-        //         if (difference(forbidden[a], s).any()) {
-        //             ok = false;
-        //             break;
-        //         }
-        //     }
-        //     if (!ok) continue;
-        // }
-        Graph decomp;
-        vector<int> nodes;
-        FOR_EACH(v, s) nodes.push_back(v);
-        decomp.add_node(nodes[0]);
-        decomp.root = nodes[0];
-        for (int i = 1; i < nodes.size(); i++) {
-            decomp.add_edge(nodes[i - 1], nodes[i]);
-        }
-
-        vector<Graph> subtrees;
         bool ok = true;
+        for (int i = 0; i < BLOCKS.size(); i++) {
+            if (is_subset(BLOCKS[i], g.nodes) && intersection(BLOCKS[i], s).none() && k < s.count() + BLOCK_TD[i]) {
+                ok = false;
+                break;
+            }
+        }
+        if (!ok) continue;
+
         auto comps = components(remove(g, s));
         // 頂点数が大きいものほど失敗しやすそう（しかし、頂点数が小さいもので失敗するものをすぐに発見したほうがよさそう）
         sort(comps.begin(), comps.end(), [](auto& a, auto& b) { return a.count() < b.count(); });
-
         // 先に treewidth lb による枝刈りをしておく
         for (auto& C : comps) {
             int lim = k - s.count();
@@ -133,6 +105,16 @@ Graph solve(const Graph& g, int k) {
         }
         if (!ok) continue;
 
+        Graph decomp;
+        vector<int> nodes;
+        FOR_EACH(v, s) nodes.push_back(v);
+        decomp.add_node(nodes[0]);
+        decomp.root = nodes[0];
+        for (int i = 1; i < nodes.size(); i++) {
+            decomp.add_edge(nodes[i - 1], nodes[i]);
+        }
+
+        vector<Graph> subtrees;
         for (auto& C : comps) {
             Graph subtree = solve(induced(g, C), k - s.count());
             if (!subtree.n()) {
@@ -154,17 +136,22 @@ Graph solve(const Graph& g, int k) {
     return Graph();
 }
 
-int main() {
-    Graph g = read_input();
-    auto ord = find_good_order(g);
-    g = reorder(g, ord.first);
+Graph treedepth_decomp(Graph g) {
     for (int k = 1;; k++) {
         if (prune_by_td_lb(g, k)) continue;
         Graph decomp = solve(g, k);
         if (decomp.n()) {
-            decomp = reorder(decomp, ord.second);
-            print_decomp(decomp);
-            break;
+            return decomp;
         }
     }
+}
+
+int main() {
+    Graph g = read_input();
+    auto start = chrono::steady_clock::now();
+    if (g.n() > max_n) init_blocks(g);
+    auto finish = chrono::steady_clock::now();
+    cerr << "init finished with " << BLOCKS.size() << " blocks ("
+         << chrono::duration_cast<chrono::milliseconds>(finish - start).count() << " msec)" << endl;
+    print_decomp(treedepth_decomp(g));
 }

@@ -25,6 +25,7 @@ else
             cp $output_file $best_file
         elif [ $size -gt $best_size ]; then
             echo suboptimal: known best is $best_size
+            exit 133
         fi
     else
         cp $output_file $best_file

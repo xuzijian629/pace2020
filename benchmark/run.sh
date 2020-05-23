@@ -32,5 +32,8 @@ for input_file in $(ls $base_dir/data/$DATA_CATEGORY/*.gr | head -n $MAX_TESTS);
     else
         set -e
         $base_dir/benchmark/scripts/run_verify.sh $input_file $execution_id
+        if [ $? -eq 133 ]; then
+            exit 1
+        fi
     fi
 done
