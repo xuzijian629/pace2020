@@ -1,5 +1,6 @@
 #pragma once
 #include "../graph.cpp"
+#include "../balanced_separator.cpp"
 
 extern Graph treedepth_decomp(Graph g);
 
@@ -37,7 +38,6 @@ void prepare_dist(const Graph& g) {
 vector<BITSET> kmeans(const Graph& g, int k, int num_iter = 5) {
     assert(!all_dist.empty());
     int n = g.n();
-    random_device rnd;
     vector<int> centers(k);
     using T = pair<int, int>;
     // init center
