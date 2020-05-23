@@ -1,0 +1,7 @@
+#!/bin/bash
+base_dir=$(dirname $0)
+abs_base_dir=$(cd $base_dir && pwd -P)
+cat - > $abs_base_dir/tmp
+max_node=$(head -n 1 $abs_base_dir/tmp | sed 's/p tdp //' | sed 's/ .*//')
+g++ -Ofast -std=c++14 -DBITSET_MAX_SIZE=$max_node -march=native -o $abs_base_dir/main $abs_base_dir/min-sep.cpp
+cat $abs_base_dir/tmp | $abs_base_dir/main
