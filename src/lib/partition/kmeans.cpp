@@ -1,6 +1,6 @@
 #pragma once
-#include "../graph.cpp"
 #include "../balanced_separator.cpp"
+#include "../graph.cpp"
 
 extern Graph treedepth_decomp(Graph g);
 
@@ -158,6 +158,7 @@ void init_blocks(const Graph& g) {
             }
         }
     }
+    sort(BLOCKS.begin(), BLOCKS.end(), [](auto& a, auto& b) { return a.count() < b.count(); });
 
     BLOCK_TD.resize(BLOCKS.size());
     for (int i = 0; i < BLOCKS.size(); i++) {
