@@ -91,6 +91,10 @@ Graph solve(const Graph& g, int k) {
                 ok = false;
                 break;
             }
+            if (is_subset(join(BLOCKS[i], s), g.nodes) && k < BLOCK_TD[i]) {
+                ok = false;
+                break;
+            }
         }
         if (!ok) continue;
 
