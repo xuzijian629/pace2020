@@ -6,18 +6,22 @@
 // Exact and Heuristic Methods for the Vertex Separator Problem
 // Haeder Althoby, Mohamed Biha, and Andre Sesboue
 
+random_device rnd;
 int get_minimum_degree_v(const Graph& g) {
     int nin = 1e9;
-    int ret = -1;
+    vector<int> mins;
     FOR_EACH(v, g.nodes) {
         int d = at(g.adj, v).count();
         if (d < nin) {
             nin = d;
-            ret = v;
+            mins.clear();
+            mins.push_back(v);
+        } else if (d == nin) {
+            mins.push_back(v);
         }
     }
-    assert(ret != -1);
-    return ret;
+    assert(nin != 1e9);
+    return mins[rnd() % mins.size()];
 }
 
 BITSET GA(const Graph& g, double alpha = 0.667) {
@@ -29,16 +33,19 @@ BITSET GA(const Graph& g, double alpha = 0.667) {
     BITSET B = difference(g.nodes, join(A, C));
     auto new_a = [&]() {
         int nin = 1e9;
-        int ret = -1;
+        vector<int> mins;
         FOR_EACH(i, difference(g.nodes, A)) {
             int s = intersection(open_neighbors(g, i), B).count();
             if (s < nin) {
                 nin = s;
-                ret = i;
+                mins.clear();
+                mins.push_back(i);
+            } else if (s == nin) {
+                mins.push_back(i);
             }
         }
-        assert(ret != -1);
-        return ret;
+        assert(nin != 1e9);
+        return mins[rnd() % mins.size()];
     };
     while (A.count() + C.count() <= n - beta) {
         int i = new_a();
