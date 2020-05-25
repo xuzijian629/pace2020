@@ -15,6 +15,17 @@ int MAX_NODE_SIZE;
 // array may be faster than unordered_map/vector
 using ADJ = array<BITSET, BITSET_MAX_SIZE>;
 // using ADJ = vector<BITSET>;
+
+// sparse ADJ
+using ADJSPRS = vector<long long>;
+#if BITSET_MAX_SIZE <= 256
+    #define _ADJSPRS_CEILLOG_N 8
+    #define _ADJSPRS_MAX_SFT 64 
+#else
+    #define _ADJSPRS_CEILLOG_N 10
+    #define _ADJSPRS_MAX_SFT 60
+#endif
+
 #define at(adj, i) adj[i]
 // using ADJ = unordered_map<int, BITSET>;
 // #define at(adj, i) adj.at(i)
@@ -171,4 +182,33 @@ Graph induced(const Graph& g, const BITSET& S) {
     }
     ret.nodes = S;
     return ret;
+}
+
+ADJSPRS encodeADJ(const ADJ &adj) {
+    ADJSPRS adjsprs;
+    int sft = _ADJSPRS_MAX_SFT;
+    for (size_t i = 0; i < adj.size(); ++i) {
+        const auto &v = adj[i];
+        for (size_t j = v._Find_first(); j < i; j = v._Find_next(j)) {
+            if (sft == _ADJSPRS_MAX_SFT) {
+                adjsprs.push_back(0);
+                sft = 0;
+            }
+            adjsprs.back() |= (i << sft);
+            sft += _ADJSPRS_CEILLOG_N;
+            adjsprs.back() |= (j << sft);
+            sft += _ADJSPRS_CEILLOG_N;
+        }
+    }
+    return adjsprs;
+}
+
+bool operator==(const ADJSPRS& xs, const ADJSPRS& ys) {
+    if (xs.size() != ys.size()) return false;
+    else {
+        for (size_t i = 0; i < xs.size(); ++i) {
+            if (xs[i] != ys[i]) return false;
+        }
+        return true;
+    }
 }
