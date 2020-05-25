@@ -129,7 +129,7 @@ vector<vector<int>> compute_P(const Graph& g, vector<vector<int>> P, BITSET forb
     return P;
 }
 
-constexpr int mod = (1 << 29) - 1;
+constexpr int mod = 1000000007; // (1 << 29) - 1;
 using hash_t = int;
 
 struct Init {
@@ -233,13 +233,63 @@ Graph local(const Graph& g, const BITSET& C) {
     return ret;
 }
 
-struct sep_memo_t {
-    int k;
-    Graph g;
-    vector<BITSET> seps;
+class Sep_Dictionary {
+private:
+    struct sep_memo_t {
+        int k;
+        BITSET nodes;
+        ADJSPRS adjsprs;
+        vector<BITSET> seps;
+        list<hash_t>::iterator list_itr;
+    };
+    unordered_map<hash_t, sep_memo_t> sep_memos;
+    list<hash_t> hash_lst; // (begin) new -...-> old (back)
+    size_t n = 0; // number of entries
+    size_t edges_cnt = 0; // sum of adjsprs.size()
+    size_t seps_cnt = 0; // sum of seps.size()
+    void erase(const hash_t h) {
+        hash_lst.erase(sep_memos[h].list_itr);
+        n--;
+        edges_cnt -= sep_memos[h].adjsprs.size();
+        seps_cnt -= sep_memos[h].seps.size();
+        sep_memos.erase(h);
+    }
+    void check_capacity() {
+        while (true) {
+            // almost: (BITSET_MAX_SIZE + 48)*n, 8*edges_cnt, BITSET_MAX_SIZE*seps_cnt
+            size_t databytes = ((BITSET_MAX_SIZE + 48) >> 3) * (this->n + seps_cnt) + 16 * edges_cnt;
+            // 7GB
+            if (databytes <= 7516192768ULL) break;
+            else this->erase(hash_lst.back());
+        }
+    }
+public:
+    // LRU policy
+    void insert(const hash_t h, const int k, const BITSET &nodes, const ADJSPRS &adjsprs, const vector<BITSET> &seps) {
+        if (this->sep_memos.count(h)) {
+            this->erase(h);
+        }
+        this->hash_lst.push_front(h);
+        sep_memos[h] = {k, nodes, adjsprs, seps, hash_lst.begin()};
+        n++;
+        edges_cnt += adjsprs.size();
+        seps_cnt += seps.size();
+        this->check_capacity();
+    }
+    sep_memo_t* access(const hash_t h) {
+        if (sep_memos.count(h)) {
+            this->hash_lst.erase(this->sep_memos[h].list_itr);
+            this->hash_lst.push_front(h);
+            this->sep_memos[h].list_itr = hash_lst.begin();
+            return &(this->sep_memos[h]);
+        }
+        else {
+            return nullptr;
+        }
+    }
 };
 
-unordered_map<hash_t, sep_memo_t> sep_memo;
+Sep_Dictionary sep_dictionary;
 
 vector<BITSET> list_exact_slow(const Graph& g, int k) {
     vector<BITSET> ret;
@@ -275,15 +325,19 @@ bool is_separators(const Graph& g, const vector<BITSET>& seps) {
 vector<BITSET> list_exact(const Graph& g, int k) {
     vector<BITSET> ret;
     hash_t h = get_hash(g);
-    if (sep_memo.count(h) && sep_memo[h].g == g) {
-        if (k <= sep_memo[h].k) {
-            for (const auto& sep : sep_memo[h].seps) {
-                if (sep.count() <= k)
-                    ret.push_back(sep);
-                else
-                    break;
+    ADJSPRS g_adjsprs = encodeADJ(g.adj);
+    auto sep_memo = sep_dictionary.access(h);
+    if (sep_memo != nullptr) {
+        if (sep_memo->nodes == g.nodes && sep_memo->adjsprs == g_adjsprs) {
+            if (k <= sep_memo->k) {
+                for (const auto& sep : sep_memo->seps) {
+                    if (sep.count() <= k)
+                        ret.push_back(sep);
+                    else
+                        break;
+                }
+                return ret;
             }
-            return ret;
         }
     }
     int v = min_fill_vertex(g);
@@ -313,7 +367,7 @@ vector<BITSET> list_exact(const Graph& g, int k) {
     }
     ret = unique(ret);
     if (ret.size() > 64) {
-        sep_memo[h] = {k, g, ret};
+        sep_dictionary.insert(h, k, g.nodes, g_adjsprs, ret);
     }
     return ret;
 }
