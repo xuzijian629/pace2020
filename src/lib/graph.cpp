@@ -17,12 +17,12 @@ using ADJ = array<BITSET, BITSET_MAX_SIZE>;
 // using ADJ = vector<BITSET>;
 
 // sparse ADJ
-using ADJSPRS = vector<long long>;
+using ADJSPRS = vector<unsigned long long>;
 #if BITSET_MAX_SIZE <= 256
-    #define _ADJSPRS_CEILLOG_N 8
+    #define _ADJSPRS_CEILLOG_N 8 // 4 edges per ull value
     #define _ADJSPRS_MAX_SFT 64 
 #else
-    #define _ADJSPRS_CEILLOG_N 10
+    #define _ADJSPRS_CEILLOG_N 10 // 3 edges per ull value
     #define _ADJSPRS_MAX_SFT 60
 #endif
 
