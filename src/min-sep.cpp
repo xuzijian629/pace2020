@@ -155,13 +155,9 @@ Graph treedepth_decomp(Graph g) {
 int main() {
     Graph g = read_input();
     auto start = chrono::steady_clock::now();
-    init_blocks(g);
+    if (g.n() > max_n) init_blocks(g);
     auto finish = chrono::steady_clock::now();
     cerr << "init finished with " << BLOCKS.size() << " blocks ("
          << chrono::duration_cast<chrono::milliseconds>(finish - start).count() << " msec)" << endl;
-    cerr << "maximum block size: ";
-    int max_block_size = 0;
-    for (auto& b : BLOCKS) max_block_size = max(max_block_size, (int)b.count());
-    cerr << max_block_size << endl;
     print_decomp(treedepth_decomp(g));
 }
