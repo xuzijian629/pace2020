@@ -134,47 +134,55 @@ int minor_min_width(Graph g) {
 
     // deg[v] <= deg[u], u and v are adjacent
     auto contract = [&](int v, int u) {
-        FOR_EACH(w, at(g.adj, v)) {
-            int d = deg[w];
-            at(g.adj, w).reset(v);
-            d--;
-            if (w != u && !at(g.adj, w).test(u)) {
-                at(g.adj, w).set(u);
-                at(g.adj, u).set(w);
-                D[deg[u]].reset(u);
-                deg[u]++;
-                D[deg[u]].set(u);
-                d++;
-            }
-            assert(d >= 0);
+        // N(v) & N(u)
+        BITSET adj_both = g.adj[v] & g.adj[u];
+        // N(v) \ N[u]
+        BITSET adj_v_only = g.adj[v] ^ adj_both;
+        adj_v_only.reset(u);
+        // modify u
+        g.adj[u] |= adj_v_only;
+        g.adj[u].reset(v);
+        D[deg[u]].reset(u);
+        deg[u] += adj_v_only.count();  // connect to adj_v_only
+        deg[u]--;                      // remove v
+        D[deg[u]].set(u);
+        // modify adj_both
+        FOR_EACH(w, adj_both) {
+            g.adj[w].reset(v);
             D[deg[w]].reset(w);
-            deg[w] = d;
+            deg[w]--;  // remove v
             D[deg[w]].set(w);
+        }
+        // modify adj_v_only
+        FOR_EACH(w, adj_v_only) {
+            g.adj[w].reset(v);  // remove v
+            g.adj[w].set(u);    // connect to u
         }
     };
 
-    int ret = 0;
     int n = g.n();
-    for (int _ = 0; _ < n; _++) {
-        for (int i = 0; i < n; i++) {
-            if (!D[i].any()) continue;
-            ret = max(ret, i);
-            int v = D[i]._Find_first();
-            assert(at(g.adj, v).count() == i);
-            D[i].reset(v);
-            if (i == 0) break;
-            int mindeg = 1e9;
-            int u = -1;
-            FOR_EACH(w, at(g.adj, v)) {
-                if (deg[w] < mindeg) {
-                    mindeg = deg[w];
-                    u = w;
-                }
-            }
-            assert(u != -1);
-            contract(v, u);
-            break;
+    int ret = min(1, n);
+    int d = 0;
+    for (int _ = 0; _ < n - 1; _++) {
+        while (!D[d].any()) {
+            d++;
         }
+        assert(d != 0);  // d cannot be 0 (do only n - 1 loops)
+        ret = max(ret, d);
+        int v = D[d]._Find_first();
+        assert(at(g.adj, v).count() == d);
+        D[d].reset(v);
+        int mindeg = 1e9;
+        int u = -1;
+        FOR_EACH(w, at(g.adj, v)) {
+            if (deg[w] < mindeg) {
+                mindeg = deg[w];
+                u = w;
+            }
+        }
+        assert(u != -1);
+        contract(v, u);
+        d--;  // current minimum d may be reduced by 1
     }
     return ret;
 }
