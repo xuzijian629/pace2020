@@ -132,24 +132,32 @@ int minor_min_width(Graph g) {
         D[deg[v]].set(v);
     }
 
+
     // deg[v] <= deg[u], u and v are adjacent
     auto contract = [&](int v, int u) {
-        FOR_EACH(w, at(g.adj, v)) {
-            int d = deg[w];
-            at(g.adj, w).reset(v);
-            d--;
-            if (w != u && !at(g.adj, w).test(u)) {
-                at(g.adj, w).set(u);
-                at(g.adj, u).set(w);
-                D[deg[u]].reset(u);
-                deg[u]++;
-                D[deg[u]].set(u);
-                d++;
-            }
-            assert(d >= 0);
+        // N(v) & N(u)
+        BITSET adj_both = g.adj[v] & g.adj[u];
+        // N(v) \ N[u]
+        BITSET adj_v_only = g.adj[v] ^ adj_both;
+        adj_v_only.reset(u);
+        // modify u
+        g.adj[u] |= adj_v_only;
+        g.adj[u].reset(v);
+        D[deg[u]].reset(u);
+        deg[u] += adj_v_only.count(); // connect to adj_v_only
+        deg[u]--; // remove v
+        D[deg[u]].set(u);
+        // modify adj_both
+        FOR_EACH(w, adj_both) {
+            g.adj[w].reset(v);
             D[deg[w]].reset(w);
-            deg[w] = d;
+            deg[w]--; // remove v
             D[deg[w]].set(w);
+        }
+        // modify adj_v_only
+        FOR_EACH(w, adj_v_only) {
+            g.adj[w].reset(v); // remove v
+            g.adj[w].set(u); // connect to u
         }
     };
 
