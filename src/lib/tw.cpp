@@ -124,10 +124,68 @@ int degeneracy(const Graph& g) {
     return ret;
 }
 
+int minor_min_width(Graph g) {
+    array<int, BITSET_MAX_SIZE> deg;
+    array<BITSET, BITSET_MAX_SIZE> D;
+    FOR_EACH(v, g.nodes) {
+        deg[v] = at(g.adj, v).count();
+        D[deg[v]].set(v);
+    }
+
+    // deg[v] <= deg[u], u and v are adjacent
+    auto contract = [&](int v, int u) {
+        FOR_EACH(w, at(g.adj, v)) {
+            int d = deg[w];
+            at(g.adj, w).reset(v);
+            d--;
+            if (w != u && !at(g.adj, w).test(u)) {
+                at(g.adj, w).set(u);
+                at(g.adj, u).set(w);
+                D[deg[u]].reset(u);
+                deg[u]++;
+                D[deg[u]].set(u);
+                d++;
+            }
+            assert(d >= 0);
+            D[deg[w]].reset(w);
+            deg[w] = d;
+            D[deg[w]].set(w);
+        }
+    };
+
+    int ret = 0;
+    int n = g.n();
+    for (int _ = 0; _ < n; _++) {
+        for (int i = 0; i < n; i++) {
+            if (!D[i].any()) continue;
+            ret = max(ret, i);
+            int v = D[i]._Find_first();
+            assert(at(g.adj, v).count() == i);
+            D[i].reset(v);
+            if (i == 0) break;
+            int mindeg = 1e9;
+            int u = -1;
+            FOR_EACH(w, at(g.adj, v)) {
+                if (deg[w] < mindeg) {
+                    mindeg = deg[w];
+                    u = w;
+                }
+            }
+            assert(u != -1);
+            contract(v, u);
+            break;
+        }
+    }
+    return ret;
+}
+
 // treewidth == max clique size - 1 == coloring number - 1 == degeneracy
 int treewidth_chordal(const Graph& g) { return degeneracy(g); }
 
-int treewidth_lb(const Graph& g) { return degeneracy(g); }
+int treewidth_lb(const Graph& g) {
+    // return degeneracy(g);
+    return minor_min_width(g);
+}
 
 // treewidth heuristic by mindeg
 int mindeg(Graph g) {
