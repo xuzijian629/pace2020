@@ -131,8 +131,7 @@ int minor_min_width(Graph g) {
         deg[v] = at(g.adj, v).count();
         D[deg[v]].set(v);
     }
-
-
+    
     // deg[v] <= deg[u], u and v are adjacent
     auto contract = [&](int v, int u) {
         // N(v) & N(u)
@@ -161,28 +160,29 @@ int minor_min_width(Graph g) {
         }
     };
 
-    int ret = 0;
     int n = g.n();
-    for (int _ = 0; _ < n; _++) {
-        for (int i = 0; i < n; i++) {
-            if (!D[i].any()) continue;
-            ret = max(ret, i);
-            int v = D[i]._Find_first();
-            assert(at(g.adj, v).count() == i);
-            D[i].reset(v);
-            if (i == 0) break;
-            int mindeg = 1e9;
-            int u = -1;
-            FOR_EACH(w, at(g.adj, v)) {
-                if (deg[w] < mindeg) {
-                    mindeg = deg[w];
-                    u = w;
-                }
-            }
-            assert(u != -1);
-            contract(v, u);
-            break;
+    int ret = min(1, n);
+    int d = 0;
+    for (int _ = 0; _ < n - 1; _++) {
+        while (!D[d].any()) {
+            d++;
         }
+        assert(d != 0); // d cannot be 0 (do only n - 1 loops)
+        ret = max(ret, d);
+        int v = D[d]._Find_first();
+        assert(at(g.adj, v).count() == d);
+        D[d].reset(v);
+        int mindeg = 1e9;
+        int u = -1;
+        FOR_EACH(w, at(g.adj, v)) {
+            if (deg[w] < mindeg) {
+                mindeg = deg[w];
+                u = w;
+            }
+        }
+        assert(u != -1);
+        contract(v, u);
+        d--; // current minimum d may be reduced by 1
     }
     return ret;
 }
