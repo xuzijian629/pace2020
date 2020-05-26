@@ -245,21 +245,21 @@ private:
     unordered_map<hash_t, sep_memo_t> sep_memos;
     list<hash_t> hash_lst; // (begin) new -...-> old (back)
     size_t n = 0; // number of entries
-    size_t edges_cnt = 0; // sum of adjsprs.size()
-    size_t seps_cnt = 0; // sum of seps.size()
+    size_t edges_cnt = 0; // sum of adjsprs.capacity()
+    size_t seps_cnt = 0; // sum of seps.capacity()
+    size_t mem_lmt = 7247757312ULL; // 6.75 GB
     void erase(const hash_t h) {
         hash_lst.erase(sep_memos[h].list_itr);
         n--;
-        edges_cnt -= sep_memos[h].adjsprs.size();
-        seps_cnt -= sep_memos[h].seps.size();
+        edges_cnt -= sep_memos[h].adjsprs.capacity();
+        seps_cnt -= sep_memos[h].seps.capacity();
         sep_memos.erase(h);
     }
     void check_capacity() {
         while (true) {
-            // almost: (BITSET_MAX_SIZE + 48)*n, 8*edges_cnt, BITSET_MAX_SIZE*seps_cnt
-            size_t databytes = ((BITSET_MAX_SIZE + 48) >> 3) * (this->n + seps_cnt) + 16 * edges_cnt;
-            // 7GB
-            if (databytes <= 7516192768ULL) break;
+            // exactly:
+            size_t databytes = (16+_MY_BITSET_MEMBYTES)*this->n + 8*this->edges_cnt + _MY_BITSET_MEMBYTES*this->seps_cnt;
+            if (databytes <= this->mem_lmt) break;
             else this->erase(hash_lst.back());
         }
     }
@@ -272,8 +272,8 @@ public:
         this->hash_lst.push_front(h);
         sep_memos[h] = {k, nodes, adjsprs, seps, hash_lst.begin()};
         n++;
-        edges_cnt += adjsprs.size();
-        seps_cnt += seps.size();
+        edges_cnt += adjsprs.capacity();
+        seps_cnt += seps.capacity();
         this->check_capacity();
     }
     sep_memo_t* access(const hash_t h) {
@@ -286,6 +286,10 @@ public:
         else {
             return nullptr;
         }
+    }
+    void reduce_memcapacity(size_t lmt_diff) {
+        this->mem_lmt -= lmt_diff;
+        this->check_capacity();
     }
 };
 
