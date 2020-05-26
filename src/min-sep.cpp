@@ -51,8 +51,7 @@ Graph solve(const Graph& g, int k) {
         main_memo_ptr->ub = min(main_memo_ptr->ub, heur_depth);
         if (main_memo_ptr->ans == nullptr) {
             sep_dictionary.reduce_memcapacity(_ADJ_MEMBYTES);
-        }
-        else {
+        } else {
             delete main_memo_ptr->ans;
         }
         main_memo_ptr->ans = new Graph();
@@ -77,8 +76,7 @@ Graph solve(const Graph& g, int k) {
             main_memo_ptr->ub = min(main_memo_ptr->ub, k);
             if (main_memo_ptr->ans == nullptr) {
                 sep_dictionary.reduce_memcapacity(_ADJ_MEMBYTES);
-            }
-            else {
+            } else {
                 delete main_memo_ptr->ans;
             }
             main_memo_ptr->ans = new Graph();
@@ -149,8 +147,7 @@ Graph solve(const Graph& g, int k) {
         main_memo_ptr->ub = min(main_memo_ptr->ub, k);
         if (main_memo_ptr->ans == nullptr) {
             sep_dictionary.reduce_memcapacity(_ADJ_MEMBYTES);
-        }
-        else {
+        } else {
             delete main_memo_ptr->ans;
         }
         main_memo_ptr->ans = new Graph();
