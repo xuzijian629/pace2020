@@ -172,11 +172,12 @@ int minor_min_width(Graph g) {
         int v = D[d]._Find_first();
         assert(at(g.adj, v).count() == d);
         D[d].reset(v);
-        int mindeg = 1e9;
+        int nin = 1e9;
         int u = -1;
         FOR_EACH(w, at(g.adj, v)) {
-            if (deg[w] < mindeg) {
-                mindeg = deg[w];
+            int common_neighbors = intersection(at(g.adj, v), at(g.adj, w)).count();
+            if (common_neighbors < nin) {
+                nin = common_neighbors;
                 u = w;
             }
         }
