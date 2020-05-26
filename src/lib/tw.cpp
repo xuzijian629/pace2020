@@ -161,7 +161,7 @@ int minor_min_width(Graph g) {
     };
 
     int n = g.n();
-    int ret = min(1, n);
+    int ret = 0;
     int d = 0;
     for (int _ = 0; _ < n - 1; _++) {
         while (!D[d].any()) {
