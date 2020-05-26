@@ -182,11 +182,6 @@ int minor_min_width(Graph g) {
 // treewidth == max clique size - 1 == coloring number - 1 == degeneracy
 int treewidth_chordal(const Graph& g) { return degeneracy(g); }
 
-int treewidth_lb(const Graph& g) {
-    // return degeneracy(g);
-    return minor_min_width(g);
-}
-
 // treewidth heuristic by mindeg
 int mindeg(Graph g) {
     Graph h(g);
