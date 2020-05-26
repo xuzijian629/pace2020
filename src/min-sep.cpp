@@ -89,7 +89,7 @@ Graph solve(const Graph& g, int k) {
 
     // separator によって 分解される各連結成分の td は 1 以上
     // サイズ k - 1 までの separator を列挙すればいい
-    auto seps = list_exact(g, min(k - 1, treewidth_ub(g) + 1));
+    auto seps = list_exact(g, min(k - 1, treewidth_ub(g)));
     if (seps.empty()) {
         main_memo_ptr->lb = max(main_memo_ptr->lb, k + 1);
         return Graph();
@@ -101,6 +101,10 @@ Graph solve(const Graph& g, int k) {
         for (int i = 0; i < BLOCKS.size(); i++) {
             if (BLOCKS[i].count() > n) break;
             if (is_subset(BLOCKS[i], g.nodes) && intersection(BLOCKS[i], s).none() && k < s.count() + BLOCK_TD[i]) {
+                ok = false;
+                break;
+            }
+            if (is_subset(join(BLOCKS[i], s), g.nodes) && k < BLOCK_TD[i]) {
                 ok = false;
                 break;
             }
