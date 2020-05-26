@@ -125,10 +125,11 @@ bool prune_by_td_lb(const Graph& g, int lim) {
     if (n <= 2) return n > lim;
     if (lb_n_m(g) > lim) return true;
     if (lb_n_d(g) > lim) return true;
-    if (treewidth_lb(g) + 1 > lim) return true;
+    if (degeneracy(g) + 1 > lim) return true;
     if (lim < 30 && (1 << lim) <= g.n()) {
         if (32 - __builtin_clz(longest_path_lb(g)) > lim) return true;
     }
+    if (minor_min_width(g) + 1 > lim) return true;
     // if (td_lb_dfs_tree(g) > lim) return true;
     return false;
 }

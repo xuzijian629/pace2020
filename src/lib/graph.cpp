@@ -18,21 +18,21 @@ using ADJ = array<BITSET, BITSET_MAX_SIZE>;
 
 // bitset is 64-bit aligned
 #if ((BITSET_MAX_SIZE >> 6) << 6) == BITSET_MAX_SIZE
-    #define _MY_BITSET_MEMBYTES (BITSET_MAX_SIZE >> 3)
+#define _MY_BITSET_MEMBYTES (BITSET_MAX_SIZE >> 3)
 #else
-	#define _MY_BITSET_MEMBYTES (((BITSET_MAX_SIZE >> 6) + 1) << 3)
+#define _MY_BITSET_MEMBYTES (((BITSET_MAX_SIZE >> 6) + 1) << 3)
 #endif
 
-#define _ADJ_MEMBYTES _MY_BITSET_MEMBYTES * BITSET_MAX_SIZE
+#define _ADJ_MEMBYTES _MY_BITSET_MEMBYTES* BITSET_MAX_SIZE
 
 // sparse ADJ
 using ADJSPRS = vector<unsigned long long>;
 #if BITSET_MAX_SIZE <= 256
-    #define _ADJSPRS_CEILLOG_N 8 // 4 edges per ull value
-    #define _ADJSPRS_MAX_SFT 64 
+#define _ADJSPRS_CEILLOG_N 8  // 4 edges per ull value
+#define _ADJSPRS_MAX_SFT 64
 #else
-    #define _ADJSPRS_CEILLOG_N 10 // 3 edges per ull value
-    #define _ADJSPRS_MAX_SFT 60
+#define _ADJSPRS_CEILLOG_N 10  // 3 edges per ull value
+#define _ADJSPRS_MAX_SFT 60
 #endif
 
 #define at(adj, i) adj[i]
@@ -193,11 +193,11 @@ Graph induced(const Graph& g, const BITSET& S) {
     return ret;
 }
 
-ADJSPRS encodeADJ(const ADJ &adj) {
+ADJSPRS encodeADJ(const ADJ& adj) {
     ADJSPRS adjsprs;
     int sft = _ADJSPRS_MAX_SFT;
     for (size_t i = 0; i < adj.size(); ++i) {
-        const auto &v = adj[i];
+        const auto& v = adj[i];
         for (size_t j = v._Find_first(); j < i; j = v._Find_next(j)) {
             if (sft == _ADJSPRS_MAX_SFT) {
                 adjsprs.push_back(0);
@@ -213,7 +213,8 @@ ADJSPRS encodeADJ(const ADJ &adj) {
 }
 
 bool operator==(const ADJSPRS& xs, const ADJSPRS& ys) {
-    if (xs.size() != ys.size()) return false;
+    if (xs.size() != ys.size())
+        return false;
     else {
         for (size_t i = 0; i < xs.size(); ++i) {
             if (xs[i] != ys[i]) return false;

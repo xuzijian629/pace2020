@@ -124,10 +124,72 @@ int degeneracy(const Graph& g) {
     return ret;
 }
 
+int minor_min_width(Graph g) {
+    array<int, BITSET_MAX_SIZE> deg;
+    array<BITSET, BITSET_MAX_SIZE> D;
+    FOR_EACH(v, g.nodes) {
+        deg[v] = at(g.adj, v).count();
+        D[deg[v]].set(v);
+    }
+
+    // deg[v] <= deg[u], u and v are adjacent
+    auto contract = [&](int v, int u) {
+        // N(v) & N(u)
+        BITSET adj_both = g.adj[v] & g.adj[u];
+        // N(v) \ N[u]
+        BITSET adj_v_only = g.adj[v] ^ adj_both;
+        adj_v_only.reset(u);
+        // modify u
+        g.adj[u] |= adj_v_only;
+        g.adj[u].reset(v);
+        D[deg[u]].reset(u);
+        deg[u] += adj_v_only.count();  // connect to adj_v_only
+        deg[u]--;                      // remove v
+        D[deg[u]].set(u);
+        // modify adj_both
+        FOR_EACH(w, adj_both) {
+            g.adj[w].reset(v);
+            D[deg[w]].reset(w);
+            deg[w]--;  // remove v
+            D[deg[w]].set(w);
+        }
+        // modify adj_v_only
+        FOR_EACH(w, adj_v_only) {
+            g.adj[w].reset(v);  // remove v
+            g.adj[w].set(u);    // connect to u
+        }
+    };
+
+    int n = g.n();
+    int ret = 0;
+    int d = 0;
+    for (int _ = 0; _ < n - 1; _++) {
+        while (!D[d].any()) {
+            d++;
+        }
+        assert(d != 0);  // d cannot be 0 (do only n - 1 loops)
+        ret = max(ret, d);
+        int v = D[d]._Find_first();
+        assert(at(g.adj, v).count() == d);
+        D[d].reset(v);
+        int nin = 1e9;
+        int u = -1;
+        FOR_EACH(w, at(g.adj, v)) {
+            int common_neighbors = intersection(at(g.adj, v), at(g.adj, w)).count();
+            if (common_neighbors < nin) {
+                nin = common_neighbors;
+                u = w;
+            }
+        }
+        assert(u != -1);
+        contract(v, u);
+        d--;  // current minimum d may be reduced by 1
+    }
+    return ret;
+}
+
 // treewidth == max clique size - 1 == coloring number - 1 == degeneracy
 int treewidth_chordal(const Graph& g) { return degeneracy(g); }
-
-int treewidth_lb(const Graph& g) { return degeneracy(g); }
 
 // treewidth heuristic by mindeg
 int mindeg(Graph g) {
