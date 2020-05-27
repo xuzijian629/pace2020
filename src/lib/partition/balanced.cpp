@@ -32,6 +32,8 @@ void decompose(const Graph& g, int min_n, int max_n) {
     }
 }
 
+bool is_connected(const Graph& g) { return components(g).size() == 1; }
+
 void gen_blocks(const Graph& g, int nax) {
     for (int max_n = 5; max_n <= nax; max_n++) {
         for (int i = 0; i < precompute_iter; i++) {
@@ -47,6 +49,7 @@ void gen_blocks(const Graph& g, int nax) {
             unordered_set<BITSET> ss;
             for (auto& b : BLOCKS[i]) {
                 if (ss.count(b)) continue;
+                assert(is_connected(induced(g, b)));
                 ss.insert(b);
                 uniq.push_back(b);
             }
