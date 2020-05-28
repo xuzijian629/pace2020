@@ -39,7 +39,7 @@ vector<BITSET> take_good_blocks(const vector<BITSET>& blocks) {
     assert(blocks.size() > blocks_max);
     vector<BITSET> ret(blocks.begin(), blocks.begin() + blocks_max);
     array<int, BITSET_MAX_SIZE> sum = {};
-    array<bool, BITSET_MAX_SIZE> used = {};
+    vector<bool> used(blocks.size());
     for (int i = 0; i < blocks_max; i++) used[i] = true;
     for (auto& b : ret) {
         FOR_EACH(v, b) sum[v]++;
