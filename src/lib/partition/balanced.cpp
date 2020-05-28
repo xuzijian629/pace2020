@@ -1,6 +1,7 @@
 #pragma once
 #include "../balanced_separator.cpp"
 #include "../graph.cpp"
+#include "flow.cpp"
 
 extern Graph treedepth_decomp(Graph g, bool use_block);
 
@@ -10,7 +11,7 @@ int treedepth_exact(const Graph& g) {
 }
 
 constexpr int tl_preprocess = 200000;
-constexpr int precompute_iter = 1000;
+constexpr int precompute_iter = 200;
 // サイズによって変えたほうがいい？
 constexpr int blocks_max = 200;
 int min_block_size = 1e9;
@@ -25,8 +26,9 @@ void decompose(const Graph& g, int min_n, int max_n) {
         if (n >= min_n) BLOCKS[n].push_back(g.nodes);
         return;
     }
-    double alpha = 0.1 + 0.8 * (rnd() % 100) / 100;
-    auto sep = GA(g, alpha);
+    // double alpha = 0.1 + 0.8 * (rnd() % 100) / 100;
+    // auto sep = GA(g, alpha);
+    auto sep = random_min_cut(g);
     for (auto& C : components(remove(g, sep))) {
         decompose(induced(g, C), min_n, max_n);
     }
@@ -125,6 +127,7 @@ void gen_blocks(const Graph& g, int nax) {
 void init_blocks(const Graph& g, int tl_millis) {
     int n = g.n();
     int nax = min(70, n / 2);
+    prepare_d_flow(g);
     gen_blocks(g, nax);
 
     for (int i = 0; i <= nax; i++) {
