@@ -73,7 +73,7 @@ void gen_blocks(const Graph& g, int nax) {
 
 void init_blocks(const Graph& g, int tl_millis) {
     int n = g.n();
-    int nax = min(60, n / 2);
+    int nax = min(70, n / 2);
     gen_blocks(g, nax);
 
     for (int i = 0; i <= nax; i++) {
