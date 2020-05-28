@@ -1,6 +1,7 @@
 #pragma once
 #include "../balanced_separator.cpp"
 #include "../graph.cpp"
+#include "fakeflow.cpp"
 #include "flow.cpp"
 
 extern Graph treedepth_decomp(Graph g, bool use_block);
@@ -28,7 +29,8 @@ void decompose(const Graph& g, int min_n, int max_n) {
     }
     // double alpha = 0.1 + 0.8 * (rnd() % 100) / 100;
     // auto sep = GA(g, alpha);
-    auto sep = random_min_cut(g);
+    // auto sep = random_min_cut(g);
+    auto sep = fake_random_min_cut(g);
     for (auto& C : components(remove(g, sep))) {
         decompose(induced(g, C), min_n, max_n);
     }

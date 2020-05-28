@@ -1,3 +1,4 @@
+#pragma once
 #include "../graph.cpp"
 #include "../minimal_separator.cpp"
 
