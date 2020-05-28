@@ -22,7 +22,7 @@ struct main_memo_t {
 };
 unordered_map<BITSET, main_memo_t> main_memo;
 
-Graph solve(const Graph& g, int k) {
+Graph solve(const Graph& g, int k, bool use_block) {
     if (g.n() == 1) {
         return Graph(g.nodes._Find_first());
     }
@@ -66,7 +66,7 @@ Graph solve(const Graph& g, int k) {
             BITSET rem;
             rem.set(v);
             for (auto& C : components(remove(g, rem))) {
-                Graph subtree = solve(induced(g, C), k - 1);
+                Graph subtree = solve(induced(g, C), k - 1, use_block);
                 if (!subtree.n()) {
                     main_memo_ptr->lb = max(main_memo_ptr->lb, k + 1);
                     return Graph();
@@ -96,15 +96,29 @@ Graph solve(const Graph& g, int k) {
     for (auto& s : seps) {
         bool ok = true;
         int n = g.n();
-        for (int i = 0; i < BLOCKS.size(); i++) {
-            if (BLOCKS[i].count() > n) break;
-            if (is_subset(BLOCKS[i], g.nodes) && intersection(BLOCKS[i], s).none() && k < s.count() + BLOCK_TD[i]) {
-                ok = false;
-                break;
-            }
-            if (is_subset(join(BLOCKS[i], s), g.nodes) && k < BLOCK_TD[i]) {
-                ok = false;
-                break;
+        if (use_block && min_block_size != 1e9) {
+            int lim = k - s.count();
+            for (int i = min_block_size; i != -1; i = NEXT_BLOCK[i]) {
+                if (i < n - s.count()) {
+                    for (int j = 0; j < BLOCKS[i].size(); j++) {
+                        if (BLOCK_TD[i][j] <= lim) break;
+                        if (is_subset(BLOCKS[i][j], g.nodes) && intersection(BLOCKS[i][j], s).none()) {
+                            ok = false;
+                            break;
+                        }
+                    }
+                    if (!ok) break;
+                }
+                if (i <= n) {
+                    for (int j = 0; j < BLOCKS[i].size(); j++) {
+                        if (BLOCK_TD[i][j] <= k) break;
+                        if (is_subset(join(BLOCKS[i][j], s), g.nodes)) {
+                            ok = false;
+                            break;
+                        }
+                    }
+                    if (!ok) break;
+                }
             }
         }
         if (!ok) continue;
@@ -133,7 +147,7 @@ Graph solve(const Graph& g, int k) {
 
         vector<Graph> subtrees;
         for (auto& C : comps) {
-            Graph subtree = solve(induced(g, C), k - s.count());
+            Graph subtree = solve(induced(g, C), k - s.count(), use_block);
             if (!subtree.n()) {
                 ok = false;
                 break;
@@ -158,10 +172,10 @@ Graph solve(const Graph& g, int k) {
     return Graph();
 }
 
-Graph treedepth_decomp(Graph g) {
+Graph treedepth_decomp(Graph g, bool use_block = true) {
     for (int k = 1;; k++) {
         if (prune_by_td_lb(g, k)) continue;
-        Graph decomp = solve(g, k);
+        Graph decomp = solve(g, k, use_block);
         if (decomp.n()) {
             return decomp;
         }
@@ -171,9 +185,9 @@ Graph treedepth_decomp(Graph g) {
 int main() {
     Graph g = read_input();
     auto start = chrono::steady_clock::now();
-    if (g.n() > max_n) init_blocks(g);
+    init_blocks(g, tl_preprocess);
     auto finish = chrono::steady_clock::now();
-    cerr << "init finished with " << BLOCKS.size() << " blocks ("
-         << chrono::duration_cast<chrono::milliseconds>(finish - start).count() << " msec)" << endl;
+    cerr << "init finished: " << chrono::duration_cast<chrono::milliseconds>(finish - start).count() << " [msec]"
+         << endl;
     print_decomp(treedepth_decomp(g));
 }

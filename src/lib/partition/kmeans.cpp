@@ -9,9 +9,9 @@ int treedepth_exact(const Graph& g) {
     return depth(decomp, decomp.root);
 }
 
-constexpr int min_n = 20;
-constexpr int max_n = 30;
-constexpr int max_precompute_num = 500;
+constexpr int max_n = (BITSET_MAX_SIZE > 100 ? 40 : 30);
+constexpr int min_n = max_n / 2;
+constexpr int max_precompute_num = 2000;
 
 vector<BITSET> BLOCKS;
 vector<int> BLOCK_TD;
@@ -141,10 +141,12 @@ bool is_connected(const Graph& g) { return components(g).size() == 1; }
 void init_blocks(const Graph& g) {
     prepare_dist(g);
     int n = g.n();
-    int k = max(2, (n + min_n - 1) / min_n);
     bool finish = false;
     for (int i = 0; i < 2 * max_precompute_num; i++) {
         if (finish) break;
+        int kmin = 2;
+        int kmax = max(3, 2 * n / max_n);
+        int k = kmin + rnd() % (kmax - kmin + 1);
         auto blocks = kmeans(g, k);
         for (auto& C : blocks) {
             assert(is_connected(induced(g, C)));

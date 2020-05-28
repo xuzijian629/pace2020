@@ -27,7 +27,7 @@ int get_minimum_degree_v(const Graph& g) {
 BITSET GA(const Graph& g, double alpha = 0.667) {
     int a = get_minimum_degree_v(g);
     int n = g.n();
-    int beta = n * alpha;
+    int beta = max(1, (int)(n * alpha));
     BITSET A, C = open_neighbors(g, a);
     A.set(a);
     BITSET B = difference(g.nodes, join(A, C));
