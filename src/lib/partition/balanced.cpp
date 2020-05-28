@@ -12,7 +12,7 @@ int treedepth_exact(const Graph& g) {
 constexpr int tl_preprocess = 200000;
 constexpr int precompute_iter = 1000;
 // サイズによって変えたほうがいい？
-constexpr int blocks_max = 100;
+constexpr int blocks_max = 200;
 int min_block_size = 1e9;
 
 array<vector<BITSET>, BITSET_MAX_SIZE> BLOCKS;
@@ -25,7 +25,7 @@ void decompose(const Graph& g, int min_n, int max_n) {
         if (n >= min_n) BLOCKS[n].push_back(g.nodes);
         return;
     }
-    double alpha = 0.5 + 0.3 * (rnd() % 100) / 100;
+    double alpha = 0.1 + 0.8 * (rnd() % 100) / 100;
     auto sep = GA(g, alpha);
     for (auto& C : components(remove(g, sep))) {
         decompose(induced(g, C), min_n, max_n);
@@ -73,7 +73,7 @@ void gen_blocks(const Graph& g, int nax) {
 
 void init_blocks(const Graph& g, int tl_millis) {
     int n = g.n();
-    int nax = min(50, n / 2);
+    int nax = min(60, n / 2);
     gen_blocks(g, nax);
 
     for (int i = 0; i <= nax; i++) {
