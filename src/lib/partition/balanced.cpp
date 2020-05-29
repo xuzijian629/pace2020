@@ -12,7 +12,7 @@ int treedepth_exact(const Graph& g) {
 }
 
 constexpr int tl_preprocess = 200000;
-constexpr int precompute_iter = 200;
+constexpr int precompute_iter = 1000;
 // サイズによって変えたほうがいい？
 constexpr int blocks_max = 200;
 int min_block_size = 1e9;
