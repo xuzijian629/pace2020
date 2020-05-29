@@ -3,7 +3,7 @@ import subprocess
 
 def template(commit_hash, first, use_reedbushl):
     return """#!/bin/sh
-#PBS -q {}-short
+#PBS -q {}-small
 #PBS -Wgroup_list=gk36
 #PBS -l select=1:ncpus=1:mpiprocs=1:ompthreads=1
 #PBS -l walltime=02:00:00
