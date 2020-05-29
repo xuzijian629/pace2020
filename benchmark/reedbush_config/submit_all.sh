@@ -4,7 +4,7 @@ set -e
 base_dir=$(dirname $0)
 abs_base_dir=$(cd $base_dir && pwd -P)
 
-num_parallel=10
+num_parallel=14
 # 0: both, 1: reedbush-h, 2: reedbush-l
 mode=0
 
