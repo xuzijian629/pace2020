@@ -21,22 +21,29 @@ array<vector<BITSET>, BITSET_MAX_SIZE> BLOCKS;
 array<vector<int>, BITSET_MAX_SIZE> BLOCK_TD;
 array<int, BITSET_MAX_SIZE> NEXT_BLOCK;
 
-void decompose(const Graph& g, int min_n, int max_n) {
+void decompose(const Graph& g, int min_n, int max_n, int mode) {
     int n = g.n();
     if (n <= max_n) {
         if (n >= min_n) BLOCKS[n].push_back(g.nodes);
         return;
     }
     BITSET sep;
-    if (rnd() & 1) {
+    if (mode == 0) {
         double alpha = 0.1 + 0.8 * (rnd() % 100) / 100;
         sep = GA(g, alpha);
-    } else {
+    } else if (mode == 1) {
         // auto sep = random_min_cut(g);
         sep = fake_random_min_cut(g);
+    } else {
+        if (rnd() & 1) {
+            double alpha = 0.1 + 0.8 * (rnd() % 100) / 100;
+            sep = GA(g, alpha);
+        } else {
+            sep = fake_random_min_cut(g);
+        }
     }
     for (auto& C : components(remove(g, sep))) {
-        decompose(induced(g, C), min_n, max_n);
+        decompose(induced(g, C), min_n, max_n, mode);
     }
 }
 
@@ -97,12 +104,13 @@ void gen_blocks(const Graph& g, int nax) {
     for (int max_n = 5; max_n <= nax; max_n++) {
         for (int i = 0; i < precompute_iter; i++) {
             int min_n = max_n / 2;
-            decompose(g, min_n, max_n);
+            decompose(g, min_n, max_n, rnd() % 3);
         }
     }
     for (int i = 0; i <= nax; i++) {
         int sz = BLOCKS[i].size();
         if (sz) {
+            shuffle(BLOCKS[i].begin(), BLOCKS[i].end(), rnd);
             cerr << "size " << i << ": " << sz << " found ";
             vector<BITSET> uniq;
             unordered_set<BITSET> ss;
