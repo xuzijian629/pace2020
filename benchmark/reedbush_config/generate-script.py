@@ -61,10 +61,18 @@ if __name__ == '__main__':
     commit_hash = input().split()[1][:5]
     base_dir = input()
     num_parallel = int(input())
-    use_reedbushl = int(input())
+    mode = int(input())
     problems = subprocess.getoutput(
         'cat {}/hard-cases.txt'.format(base_dir)).split()
     each = (len(problems) + num_parallel - 1) // num_parallel
+    idx = 0
     for i in range(0, len(problems), each):
+        idx += 1
+        if mode == 0:
+            use_reedbushl = idx & 1
+        elif mode == 1:
+            use_reedbushl = 0
+        else:
+            use_reedbushl = 1
         generate_scripts(commit_hash,
                          problems[i: min(i + each, len(problems))], use_reedbushl, base_dir)
