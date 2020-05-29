@@ -1,6 +1,4 @@
 #!/bin/sh
-set -e
-
 base_dir=$(dirname $0)
 abs_base_dir=$(cd $base_dir && pwd -P)
 
