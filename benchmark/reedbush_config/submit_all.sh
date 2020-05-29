@@ -10,8 +10,7 @@ mode=0
 
 git_log=$(git log | head -n 1)
 
-rm -rf $base_dir/tmp
-mkdir $base_dir/tmp
+mkdir -p $base_dir/tmp
 
 echo "$git_log
 $abs_base_dir
@@ -19,5 +18,12 @@ $num_parallel
 $mode" | python $base_dir/generate-script.py
 
 for f in $(ls $base_dir/tmp/*.sh); do
-    qsub $f
+    if [ -f $f.ok ]; then
+        echo $f skipped
+    else
+        qsub $f
+        if [ $? -eq 0 ]; then
+            touch $f.ok
+        fi
+    fi
 done
