@@ -1,6 +1,8 @@
 #pragma once
 #include "../balanced_separator.cpp"
 #include "../graph.cpp"
+#include "fakeflow.cpp"
+#include "flow.cpp"
 
 extern Graph treedepth_decomp(Graph g, bool use_block);
 
@@ -25,14 +27,71 @@ void decompose(const Graph& g, int min_n, int max_n) {
         if (n >= min_n) BLOCKS[n].push_back(g.nodes);
         return;
     }
-    double alpha = 0.1 + 0.8 * (rnd() % 100) / 100;
-    auto sep = GA(g, alpha);
+    BITSET sep;
+    if (rnd() & 1) {
+        double alpha = 0.1 + 0.8 * (rnd() % 100) / 100;
+        sep = GA(g, alpha);
+    } else {
+        // auto sep = random_min_cut(g);
+        sep = fake_random_min_cut(g);
+    }
     for (auto& C : components(remove(g, sep))) {
         decompose(induced(g, C), min_n, max_n);
     }
 }
 
 bool is_connected(const Graph& g) { return components(g).size() == 1; }
+
+// blocks から blocks_max 個の、できる限り共通部分が少ないような block の集合を選ぶ
+vector<BITSET> take_good_blocks(const vector<BITSET>& blocks) {
+    assert(blocks.size() > blocks_max);
+    vector<BITSET> ret(blocks.begin(), blocks.begin() + blocks_max);
+    array<int, BITSET_MAX_SIZE> sum = {};
+    vector<bool> used(blocks.size());
+    for (int i = 0; i < blocks_max; i++) used[i] = true;
+    for (auto& b : ret) {
+        FOR_EACH(v, b) sum[v]++;
+    }
+    for (int iter = 0; iter < 100; iter++) {
+        int nax = -1;
+        vector<int> worst;
+        for (int i = 0; i < blocks_max; i++) {
+            int cnt = 0;
+            FOR_EACH(v, ret[i]) cnt += sum[v];
+            if (cnt > nax) {
+                nax = cnt;
+                worst.clear();
+                worst.push_back(i);
+            } else if (cnt == nax) {
+                worst.push_back(i);
+            }
+        }
+        assert(nax != -1);
+        auto rem = worst[rnd() % worst.size()];
+        FOR_EACH(v, ret[rem]) sum[v]--;
+        used[rem] = false;
+        int nin = 1e9;
+        vector<int> best;
+        for (int i = 0; i < blocks.size(); i++) {
+            if (used[i]) continue;
+            int cnt = 0;
+            FOR_EACH(v, blocks[i]) cnt += sum[v];
+            if (cnt < nin) {
+                nin = cnt;
+                best.clear();
+                best.push_back(i);
+            } else if (cnt == nin) {
+                best.push_back(i);
+            }
+        }
+        assert(nin != 1e9);
+        auto add = best[rnd() % best.size()];
+        FOR_EACH(v, blocks[add]) sum[v]++;
+        used[add] = true;
+        ret[rem] = blocks[add];
+    }
+    return ret;
+}
 
 void gen_blocks(const Graph& g, int nax) {
     for (int max_n = 5; max_n <= nax; max_n++) {
@@ -56,6 +115,7 @@ void gen_blocks(const Graph& g, int nax) {
             cerr << "(" << ss.size() << " unique)" << endl;
             min_block_size = min(min_block_size, i);
             // ソートしないほうが混ざってよさそう？
+            // if (uniq.size() > blocks_max) uniq = take_good_blocks(uniq);
             uniq.resize(min((int)uniq.size(), blocks_max));
             BLOCKS[i] = uniq;
         }
@@ -74,6 +134,7 @@ void gen_blocks(const Graph& g, int nax) {
 void init_blocks(const Graph& g, int tl_millis) {
     int n = g.n();
     int nax = min(70, n / 2);
+    prepare_d_flow(g);
     gen_blocks(g, nax);
 
     for (int i = 0; i <= nax; i++) {
