@@ -27,10 +27,14 @@ void decompose(const Graph& g, int min_n, int max_n) {
         if (n >= min_n) BLOCKS[n].push_back(g.nodes);
         return;
     }
-    // double alpha = 0.1 + 0.8 * (rnd() % 100) / 100;
-    // auto sep = GA(g, alpha);
-    // auto sep = random_min_cut(g);
-    auto sep = fake_random_min_cut(g);
+    BITSET sep;
+    if (rnd() & 1) {
+        double alpha = 0.1 + 0.8 * (rnd() % 100) / 100;
+        sep = GA(g, alpha);
+    } else {
+        // auto sep = random_min_cut(g);
+        sep = fake_random_min_cut(g);
+    }
     for (auto& C : components(remove(g, sep))) {
         decompose(induced(g, C), min_n, max_n);
     }
