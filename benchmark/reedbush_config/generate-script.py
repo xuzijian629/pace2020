@@ -3,7 +3,7 @@ import subprocess
 
 def template(commit_hash, first, use_reedbushl):
     return """#!/bin/sh
-#PBS -q {}-small
+#PBS -q {}-{}
 #PBS -Wgroup_list=gk36
 #PBS -l select=1:ncpus=1:mpiprocs=1:ompthreads=1
 #PBS -l walltime=02:00:00
@@ -19,7 +19,7 @@ base_dir=$(pwd -P)
 execution_id=$(date +%s)
 mkdir -p $base_dir/solutions/$execution_id
 source $base_dir/benchmark/config.sh
-""".format('l' if use_reedbushl else 'h', commit_hash, first)
+""".format('l' if use_reedbushl else 'h', 'small' if use_reedbushl else 'short', commit_hash, first)
 
 
 def add_problem(problem):
