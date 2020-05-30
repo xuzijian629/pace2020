@@ -11,7 +11,7 @@ int treedepth_exact(const Graph& g) {
     return depth(decomp, decomp.root);
 }
 
-constexpr int tl_preprocess = 400000;
+constexpr int tl_preprocess = 600000;
 constexpr int precompute_iter = 1000;
 int min_block_size = 1e9;
 
