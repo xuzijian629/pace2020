@@ -1,4 +1,5 @@
 import subprocess
+import random
 
 
 def template(commit_hash, first, use_reedbushl):
@@ -65,11 +66,9 @@ if __name__ == '__main__':
     problems = subprocess.getoutput(
         'cat {}/hard-cases.txt'.format(base_dir)).split()
     each = (len(problems) + num_parallel - 1) // num_parallel
-    idx = 0
     for i in range(0, len(problems), each):
-        idx += 1
         if mode == 0:
-            use_reedbushl = idx & 1
+            use_reedbushl = random.randint(0, 1)
         elif mode == 1:
             use_reedbushl = 0
         else:
