@@ -13,7 +13,7 @@ Input graph format is specified [here](https://pacechallenge.org/2020/td/).
 
 # Directories
 - Source code for the solver is stored in `src/`.
-- Other directories such as `benchmark/` and `test` are for authors' personal use (local experiments).
+- Other directories such as `benchmark/` and `test/` are for authors' personal use (local experiments).
 
 # LICENSE
 [MIT LICENSE](https://github.com/xuzijian629/pace2020/blob/master/LICENSE.md)
