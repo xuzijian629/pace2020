@@ -1,7 +1,7 @@
 # PACE 2020
-This repository contains solvers from team xuzijian629, submitted at [PACE 2020](https://pacechallenge.org/2020/td/).
+This repository contains solvers for treedepth, submitted from team xuzijian629 at [PACE 2020](https://pacechallenge.org/2020/td/).
 
-Authors: Zijian Xu, Dejun Mao and Vorapong Suppakitpaisarn
+Authors: Zijian Xu, Dejun Mao and Vorapong Suppakitpaisarn from The University of Tokyo
 
 # Installation
 - GCC version 5.4.0 or later
