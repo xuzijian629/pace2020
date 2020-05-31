@@ -182,7 +182,6 @@ int main() {
     auto finish = chrono::steady_clock::now();
     cerr << "init finished: " << chrono::duration_cast<chrono::milliseconds>(finish - start).count() << " [msec]"
          << endl;
-    main_memo.clear();
     sep_dictionary.clear_all();
     print_decomp(treedepth_decomp(g));
 }
