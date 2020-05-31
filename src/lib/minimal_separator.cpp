@@ -302,7 +302,7 @@ public:
     void clear_all() {
         n = 0;
         edges_cnt = 0;
-        seps_cnt = 0;  
+        seps_cnt = 0;
         sep_memos.clear();
         hash_lst.clear();
     }
@@ -342,15 +342,19 @@ bool is_separators(const Graph& g, const vector<BITSET>& seps) {
 
 // range = [l, r), return first value causing "t" in evalfunc that returns l->[f,...,f,t,...,t)->r
 // NOTE: if [f,...,f) then return r, if [l, r) = empty set then invalid use
-template<class val_t, class bsargv_t, class evalfunc_t>
-val_t upper_bsearch(val_t l, val_t r, const bsargv_t &v, evalfunc_t evalfunc) {
-	if (r - l == 1) {
-		if (evalfunc(l, v)) return l;
-		else return r;
-	}
-	val_t m = (l + r) / 2;
-	if (evalfunc(m, v)) return upper_bsearch<val_t, bsargv_t>(l, m, v, evalfunc);
-	else return upper_bsearch<val_t, bsargv_t>(m, r, v, evalfunc);
+template <class val_t, class bsargv_t, class evalfunc_t>
+val_t upper_bsearch(val_t l, val_t r, const bsargv_t& v, evalfunc_t evalfunc) {
+    if (r - l == 1) {
+        if (evalfunc(l, v))
+            return l;
+        else
+            return r;
+    }
+    val_t m = (l + r) / 2;
+    if (evalfunc(m, v))
+        return upper_bsearch<val_t, bsargv_t>(l, m, v, evalfunc);
+    else
+        return upper_bsearch<val_t, bsargv_t>(m, r, v, evalfunc);
 }
 
 // list all minimal separators of size at most k
@@ -362,8 +366,8 @@ vector<BITSET> list_exact(const Graph& g, int k) {
     if (sep_memo != nullptr) {
         if (sep_memo->nodes == g.nodes && sep_memo->adjsprs == g_adjsprs) {
             if (k <= sep_memo->k) {
-                size_t r = upper_bsearch(size_t(0), sep_memo->seps.size(), sep_memo->seps, 
-                                [=](size_t i, const std::vector<BITSET>& a){ return a[i].count() > k; });
+                size_t r = upper_bsearch(size_t(0), sep_memo->seps.size(), sep_memo->seps,
+                                         [=](size_t i, const std::vector<BITSET>& a) { return a[i].count() > k; });
                 ret.resize(r);
                 assert(r == sep_memo->seps.size() || sep_memo->seps[r].count() > k);
                 std::copy(sep_memo->seps.begin(), sep_memo->seps.begin() + r, ret.begin());
