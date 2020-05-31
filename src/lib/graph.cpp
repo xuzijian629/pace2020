@@ -16,14 +16,7 @@ int MAX_NODE_SIZE;
 using ADJ = array<BITSET, BITSET_MAX_SIZE>;
 // using ADJ = vector<BITSET>;
 
-// bitset is 64-bit aligned
-#if ((BITSET_MAX_SIZE >> 6) << 6) == BITSET_MAX_SIZE
-#define _MY_BITSET_MEMBYTES (BITSET_MAX_SIZE >> 3)
-#else
-#define _MY_BITSET_MEMBYTES (((BITSET_MAX_SIZE >> 6) + 1) << 3)
-#endif
-
-#define _ADJ_MEMBYTES _MY_BITSET_MEMBYTES* BITSET_MAX_SIZE
+#define _ADJ_MEMBYTES sizeof(BITSET) * BITSET_MAX_SIZE
 
 // sparse ADJ
 using ADJSPRS = vector<unsigned long long>;
