@@ -4,10 +4,10 @@
 #include "fakeflow.cpp"
 #include "flow.cpp"
 
-extern Graph treedepth_decomp(Graph g, bool use_block);
+extern Graph treedepth_decomp(Graph g, int use_block_max_size);
 
-int treedepth_exact(const Graph& g) {
-    Graph decomp = treedepth_decomp(g, false);
+int treedepth_exact(const Graph& g, int use_block_max_size) {
+    Graph decomp = treedepth_decomp(g, use_block_max_size);
     return depth(decomp, decomp.root);
 }
 
@@ -43,7 +43,7 @@ bool is_connected(const Graph& g) { return components(g).size() == 1; }
 void gen_blocks(const Graph& g, int nax) {
     for (int max_n = 5; max_n <= nax; max_n++) {
         for (int i = 0; i < precompute_iter; i++) {
-            int min_n = max_n / 2;
+            int min_n = max_n * 0.7;
             decompose(g, min_n, max_n);
         }
     }
@@ -80,17 +80,17 @@ void gen_blocks(const Graph& g, int nax) {
 
 void init_blocks(const Graph& g, int tl_millis) {
     int n = g.n();
-    int nax = min(70, n / 2);
+    int nax = min(100, int(n * 0.9));
     prepare_d_flow(g);
     gen_blocks(g, nax);
 
-    for (int i = 0; i <= nax; i++) {
+    for (int i = 1; i <= nax; i++) {
         int sz = BLOCKS[i].size();
         if (!sz) continue;
         auto start = chrono::steady_clock::now();
         vector<pair<BITSET, int>> tmp;
         for (int j = 0; j < sz; j++) {
-            int d = treedepth_exact(induced(g, BLOCKS[i][j]));
+            int d = treedepth_exact(induced(g, BLOCKS[i][j]), i - 1);
             tmp.emplace_back(BLOCKS[i][j], d);
         }
         sort(tmp.begin(), tmp.end(), [](auto& a, auto& b) { return a.second > b.second; });
