@@ -50,7 +50,7 @@ void gen_blocks(const Graph& g, int nax, int tl) {
             }
         }
         auto finish = chrono::steady_clock::now();
-        if (BLOCKS[nax / 2].size() > 300) break;
+        if (BLOCKS[nax / 2].size() > 1000) break;
         tl -= chrono::duration_cast<chrono::milliseconds>(finish - start).count();
     }
     for (int i = 1; i <= nax; i++) {
@@ -93,11 +93,18 @@ void init_blocks(const Graph& g, int tl_millis) {
     for (int i = 1; i <= nax; i++) {
         int sz = BLOCKS[i].size();
         if (!sz) continue;
-        auto start = chrono::steady_clock::now();
         vector<pair<BITSET, int>> tmp;
         for (int j = 0; j < sz; j++) {
+            auto start = chrono::steady_clock::now();
             int d = treedepth_exact(induced(g, BLOCKS[i][j]), i - 1);
             tmp.emplace_back(BLOCKS[i][j], d);
+            auto finish = chrono::steady_clock::now();
+            tl_millis -= chrono::duration_cast<chrono::milliseconds>(finish - start).count();
+            if (tl_millis < 0) {
+                sz = j + 1;
+                BLOCKS[i].resize(sz);
+                break;
+            }
         }
         sort(tmp.begin(), tmp.end(), [](auto& a, auto& b) { return a.second > b.second; });
         BLOCK_TD[i].resize(sz);
@@ -105,8 +112,6 @@ void init_blocks(const Graph& g, int tl_millis) {
             BLOCKS[i][j] = tmp[j].first;
             BLOCK_TD[i][j] = tmp[j].second;
         }
-        auto finish = chrono::steady_clock::now();
-        tl_millis -= chrono::duration_cast<chrono::milliseconds>(finish - start).count();
         if (tl_millis < 0) {
             for (int j = i; j <= nax; j++) {
                 NEXT_BLOCK[j] = -1;

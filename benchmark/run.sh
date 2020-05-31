@@ -29,6 +29,7 @@ for input_file in $(ls $base_dir/data/$DATA_CATEGORY/*.gr | head -n $MAX_TESTS);
         echo '[TLE]'
     elif [ $exit_code -ne 0 ]; then
         echo '[RE]'
+        exit 1
     else
         set -e
         $base_dir/benchmark/scripts/run_verify.sh $input_file $execution_id
