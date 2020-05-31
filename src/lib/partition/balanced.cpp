@@ -12,7 +12,7 @@ int treedepth_exact(const Graph& g, int use_block_max_size) {
 }
 
 constexpr int tl_preprocess = 600000;
-constexpr int precompute_iter = 1000;
+constexpr int tl_enumerate = 10000;
 int min_block_size = 1e9;
 
 array<vector<BITSET>, BITSET_MAX_SIZE> BLOCKS;
@@ -40,12 +40,18 @@ void decompose(const Graph& g, int min_n, int max_n) {
 
 bool is_connected(const Graph& g) { return components(g).size() == 1; }
 
-void gen_blocks(const Graph& g, int nax) {
-    for (int max_n = 5; max_n <= nax; max_n++) {
-        for (int i = 0; i < precompute_iter; i++) {
-            int min_n = max_n * 0.7;
-            decompose(g, min_n, max_n);
+void gen_blocks(const Graph& g, int nax, int tl) {
+    while (tl > 0) {
+        auto start = chrono::steady_clock::now();
+        for (int max_n = 5; max_n <= nax; max_n++) {
+            int min_n = max_n / 2;
+            for (int i = 0; i < max_n; i++) {
+                decompose(g, min_n, max_n);
+            }
         }
+        auto finish = chrono::steady_clock::now();
+        if (BLOCKS[nax / 2].size() > 300) break;
+        tl -= chrono::duration_cast<chrono::milliseconds>(finish - start).count();
     }
     for (int i = 1; i <= nax; i++) {
         int sz = BLOCKS[i].size();
@@ -82,7 +88,8 @@ void init_blocks(const Graph& g, int tl_millis) {
     int n = g.n();
     int nax = min(100, int(n * 0.9));
     prepare_d_flow(g);
-    gen_blocks(g, nax);
+    gen_blocks(g, nax, tl_enumerate);
+    exit(0);
 
     for (int i = 1; i <= nax; i++) {
         int sz = BLOCKS[i].size();
