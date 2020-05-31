@@ -33,6 +33,7 @@ struct main_memo_t {
         this->ans = new Graph(g);
     }
 };
+
 unordered_map<BITSET, main_memo_t> main_memo;
 
 Graph solve(const Graph& g, int k, bool use_block) {
@@ -182,6 +183,7 @@ int main() {
     auto finish = chrono::steady_clock::now();
     cerr << "init finished: " << chrono::duration_cast<chrono::milliseconds>(finish - start).count() << " [msec]"
          << endl;
-    sep_dictionary.clear_all();
+    main_memo.clear();
+    sep_dictionary = Sep_Dictionary();
     print_decomp(treedepth_decomp(g));
 }

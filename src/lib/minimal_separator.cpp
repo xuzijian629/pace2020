@@ -299,13 +299,6 @@ public:
         this->mem_lmt -= lmt_diff;
         this->check_capacity();
     }
-    void clear_all() {
-        n = 0;
-        edges_cnt = 0;
-        seps_cnt = 0;
-        sep_memos.clear();
-        hash_lst.clear();
-    }
 };
 
 Sep_Dictionary sep_dictionary;
