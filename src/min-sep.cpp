@@ -20,7 +20,10 @@ struct main_memo_t {
     int ub = INT_MAX;
     Graph* ans = nullptr;
     main_memo_t() {
-        sep_dictionary.reduce_memcapacity(_MY_BITSET_MEMBYTES + 8);
+        sep_dictionary.reduce_memcapacity(sizeof(BITSET) + 8);
+    }
+    ~main_memo_t() {
+        delete this->ans;
     }
     void register_ans(const Graph &g) {
         if (ans == nullptr) {

@@ -239,7 +239,9 @@ private:
         int k;
         BITSET nodes;
         ADJSPRS adjsprs;
+        size_t adjsprs_size;
         vector<BITSET> seps;
+        size_t seps_size;
         list<hash_t>::iterator list_itr;
     };
     unordered_map<hash_t, sep_memo_t> sep_memos;
@@ -249,17 +251,18 @@ private:
     size_t seps_cnt = 0;             // sum of seps.capacity()
     size_t mem_lmt = 7247757312ULL;  // 6.75 GB
     void erase(const hash_t h) {
+        assert(h == *(sep_memos[h].list_itr));
         hash_lst.erase(sep_memos[h].list_itr);
         n--;
-        edges_cnt -= sep_memos[h].adjsprs.capacity();
-        seps_cnt -= sep_memos[h].seps.capacity();
+        edges_cnt -= sep_memos[h].adjsprs_size;
+        seps_cnt -= sep_memos[h].seps_size;
         sep_memos.erase(h);
     }
     void check_capacity() {
         while (true) {
             // exactly:
             size_t databytes =
-                (16 + _MY_BITSET_MEMBYTES) * this->n + 8 * this->edges_cnt + _MY_BITSET_MEMBYTES * this->seps_cnt;
+                (32 + sizeof(BITSET)) * this->n + 8 * this->edges_cnt + (sizeof(BITSET) + 4) * this->seps_cnt;
             if (databytes <= this->mem_lmt)
                 break;
             else
@@ -274,10 +277,12 @@ public:
             this->erase(h);
         }
         this->hash_lst.push_front(h);
-        sep_memos[h] = {k, nodes, adjsprs, seps, hash_lst.begin()};
+        size_t adjsprs_size = adjsprs.capacity();
+        size_t seps_size = seps.capacity();
+        sep_memos[h] = {k, nodes, adjsprs, adjsprs_size, seps, seps_size, hash_lst.begin()};
         n++;
-        edges_cnt += adjsprs.capacity();
-        seps_cnt += seps.capacity();
+        edges_cnt += adjsprs_size;
+        seps_cnt += seps_size;
         this->check_capacity();
     }
     sep_memo_t* access(const hash_t h) {
