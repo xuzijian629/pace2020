@@ -19,17 +19,12 @@ struct main_memo_t {
     int lb = 0;
     int ub = INT_MAX;
     Graph* ans = nullptr;
-    main_memo_t() {
-        sep_dictionary.reduce_memcapacity(sizeof(BITSET) + 20);
-    }
-    ~main_memo_t() {
-        delete this->ans;
-    }
-    void register_ans(const Graph &g) {
+    main_memo_t() { sep_dictionary.reduce_memcapacity(sizeof(BITSET) + 20); }
+    ~main_memo_t() { delete this->ans; }
+    void register_ans(const Graph& g) {
         if (ans == nullptr) {
             sep_dictionary.reduce_memcapacity(_ADJ_MEMBYTES);
-        }
-        else {
+        } else {
             delete ans;
         }
         ans = new Graph(g);
