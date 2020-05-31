@@ -43,7 +43,7 @@ bool is_connected(const Graph& g) { return components(g).size() == 1; }
 void gen_blocks(const Graph& g, int nax) {
     for (int max_n = 5; max_n <= nax; max_n++) {
         for (int i = 0; i < precompute_iter; i++) {
-            int min_n = max_n / 2;
+            int min_n = max_n * 0.7;
             decompose(g, min_n, max_n);
         }
     }
