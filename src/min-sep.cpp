@@ -19,6 +19,21 @@ struct main_memo_t {
     int lb = 0;
     int ub = INT_MAX;
     Graph* ans = nullptr;
+    main_memo_t() {
+        sep_dictionary.reduce_memcapacity(sizeof(BITSET) + 20);
+    }
+    ~main_memo_t() {
+        delete this->ans;
+    }
+    void register_ans(const Graph &g) {
+        if (ans == nullptr) {
+            sep_dictionary.reduce_memcapacity(_ADJ_MEMBYTES);
+        }
+        else {
+            delete ans;
+        }
+        ans = new Graph(g);
+    }
 };
 unordered_map<BITSET, main_memo_t> main_memo;
 
@@ -40,8 +55,6 @@ Graph solve(const Graph& g, int k, bool use_block) {
             return *(main_memo_ptr->ans);
         }
     } else {
-        sep_dictionary.reduce_memcapacity(_MY_BITSET_MEMBYTES + 8);
-        main_memo[g.nodes] = {0, INT_MAX, nullptr};
         main_memo_ptr = &(main_memo[g.nodes]);
     }
 
@@ -49,13 +62,7 @@ Graph solve(const Graph& g, int k, bool use_block) {
     int heur_depth = depth(heuristic_decomp, heuristic_decomp.root);
     if (heur_depth <= k) {
         main_memo_ptr->ub = min(main_memo_ptr->ub, heur_depth);
-        if (main_memo_ptr->ans == nullptr) {
-            sep_dictionary.reduce_memcapacity(_ADJ_MEMBYTES);
-        } else {
-            delete main_memo_ptr->ans;
-        }
-        main_memo_ptr->ans = new Graph();
-        *(main_memo_ptr->ans) = heuristic_decomp;
+        main_memo_ptr->register_ans(heuristic_decomp);
         return *(main_memo_ptr->ans);
     }
 
@@ -74,13 +81,7 @@ Graph solve(const Graph& g, int k, bool use_block) {
                 merge(decomp, subtree, v, subtree.root);
             }
             main_memo_ptr->ub = min(main_memo_ptr->ub, k);
-            if (main_memo_ptr->ans == nullptr) {
-                sep_dictionary.reduce_memcapacity(_ADJ_MEMBYTES);
-            } else {
-                delete main_memo_ptr->ans;
-            }
-            main_memo_ptr->ans = new Graph();
-            *(main_memo_ptr->ans) = decomp;
+            main_memo_ptr->register_ans(decomp);
             return *(main_memo_ptr->ans);
         }
     }
@@ -159,13 +160,7 @@ Graph solve(const Graph& g, int k, bool use_block) {
             merge(decomp, subtree, nodes.back(), subtree.root);
         }
         main_memo_ptr->ub = min(main_memo_ptr->ub, k);
-        if (main_memo_ptr->ans == nullptr) {
-            sep_dictionary.reduce_memcapacity(_ADJ_MEMBYTES);
-        } else {
-            delete main_memo_ptr->ans;
-        }
-        main_memo_ptr->ans = new Graph();
-        *(main_memo_ptr->ans) = decomp;
+        main_memo_ptr->register_ans(decomp);
         return *(main_memo_ptr->ans);
     }
     main_memo_ptr->lb = max(main_memo_ptr->lb, k + 1);
