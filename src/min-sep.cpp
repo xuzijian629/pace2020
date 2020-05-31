@@ -19,15 +19,18 @@ struct main_memo_t {
     int lb = 0;
     int ub = INT_MAX;
     Graph* ans = nullptr;
-    main_memo_t() { sep_dictionary.reduce_memcapacity(sizeof(BITSET) + 20); }
+    main_memo_t() {
+        // entry とは別にまた sizeof(BITSET) 分あるらしい
+        sep_dictionary.reduce_memcapacity((sizeof(BITSET) << 1) + sizeof(main_memo_t));
+    }
     ~main_memo_t() { delete this->ans; }
     void register_ans(const Graph& g) {
-        if (ans == nullptr) {
-            sep_dictionary.reduce_memcapacity(_ADJ_MEMBYTES);
+        if (this->ans == nullptr) {
+            sep_dictionary.reduce_memcapacity(sizeof(Graph));
         } else {
-            delete ans;
+            delete this->ans;
         }
-        ans = new Graph(g);
+        this->ans = new Graph(g);
     }
 };
 unordered_map<BITSET, main_memo_t> main_memo;
@@ -180,6 +183,6 @@ int main() {
     cerr << "init finished: " << chrono::duration_cast<chrono::milliseconds>(finish - start).count() << " [msec]"
          << endl;
     main_memo.clear();
-    sep_dictionary = Sep_Dictionary();
+    sep_dictionary.clear_all();
     print_decomp(treedepth_decomp(g));
 }

@@ -249,7 +249,7 @@ private:
     size_t n = 0;                    // number of entries
     size_t edges_cnt = 0;            // sum of adjsprs.capacity()
     size_t seps_cnt = 0;             // sum of seps.capacity()
-    size_t mem_lmt = 7247757312ULL;  // 6.75 GB
+    size_t mem_lmt = 7784628224ULL;  // 7.25 GB
     void erase(const hash_t h) {
         assert(h == *(sep_memos[h].list_itr));
         hash_lst.erase(sep_memos[h].list_itr);
@@ -262,7 +262,7 @@ private:
         while (true) {
             // exactly:
             size_t databytes =
-                (32 + sizeof(BITSET)) * this->n + 8 * this->edges_cnt + (sizeof(BITSET) + 4) * this->seps_cnt;
+                (32 + sizeof(BITSET)) * this->n + 8 * this->edges_cnt + (sizeof(BITSET)) * this->seps_cnt;
             if (databytes <= this->mem_lmt)
                 break;
             else
@@ -298,6 +298,10 @@ public:
     void reduce_memcapacity(size_t lmt_diff) {
         this->mem_lmt -= lmt_diff;
         this->check_capacity();
+    }
+    void clear_all() {
+        sep_memos.clear();
+        hash_lst.clear();
     }
 };
 
