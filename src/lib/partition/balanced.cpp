@@ -12,7 +12,7 @@ int treedepth_exact(const Graph& g, int use_block_max_size) {
 }
 
 constexpr int tl_preprocess = 600000;
-constexpr int tl_enumerate = 10000;
+constexpr int tl_enumerate = 60000;
 int min_block_size = 1e9;
 
 array<vector<BITSET>, BITSET_MAX_SIZE> BLOCKS;
@@ -89,7 +89,6 @@ void init_blocks(const Graph& g, int tl_millis) {
     int nax = min(100, int(n * 0.9));
     prepare_d_flow(g);
     gen_blocks(g, nax, tl_enumerate);
-    exit(0);
 
     for (int i = 1; i <= nax; i++) {
         int sz = BLOCKS[i].size();
