@@ -50,7 +50,7 @@ void gen_blocks(const Graph& g, int nax, int tl) {
             }
         }
         auto finish = chrono::steady_clock::now();
-        if (BLOCKS[nax / 2].size() > 1000) break;
+        if (BLOCKS[nax >= 50 ? max(50, nax / 2) : nax / 2].size() > 1000) break;
         tl -= chrono::duration_cast<chrono::milliseconds>(finish - start).count();
     }
     for (int i = 1; i <= nax; i++) {
