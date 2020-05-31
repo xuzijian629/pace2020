@@ -80,7 +80,7 @@ void gen_blocks(const Graph& g, int nax) {
 
 void init_blocks(const Graph& g, int tl_millis) {
     int n = g.n();
-    int nax = min(70, n / 2);
+    int nax = min(100, int(n * 0.9));
     prepare_d_flow(g);
     gen_blocks(g, nax);
 
