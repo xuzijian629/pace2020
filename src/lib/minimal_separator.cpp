@@ -171,7 +171,7 @@ bool operator==(const Graph& g1, const Graph& g2) {
 }
 
 template <class T>
-void vector_concat(std::vector<T> &a, std::vector<T> &b) {
+void vector_concat(std::vector<T>& a, std::vector<T>& b) {
     size_t pre_size = a.size();
     a.resize(pre_size + b.size());
     std::copy(b.begin(), b.end(), a.begin() + pre_size);
@@ -212,7 +212,7 @@ vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, co
     auto F_(F);
     F_.set(v);
     {
-        auto enum_buf = enum_rec(g, k, a, b, A, F_, min_over, Cb); 
+        auto enum_buf = enum_rec(g, k, a, b, A, F_, min_over, Cb);
         vector_concat(ret, enum_buf);
     }
     bool can_cut = (min_over ? (*min_over).test(v) && v < a : v < a);
@@ -221,10 +221,9 @@ vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, co
         auto A_ = compute_A_(g, A, b, v, &nxtCb);
         if (A_.any()) {
             {
-                auto enum_buf = enum_rec(g, k, a, b, A_, F, min_over, nxtCb); 
+                auto enum_buf = enum_rec(g, k, a, b, A_, F, min_over, nxtCb);
                 vector_concat(ret, enum_buf);
             }
-
         }
     }
     return unique(ret);
@@ -305,15 +304,12 @@ public:
             return nullptr;
         }
     }
-    enum op_t {
-        SUB, ADD
-    };
+    enum op_t { SUB, ADD };
     void change_memcapacity(size_t lmt_diff, op_t op) {
         if (op == SUB) {
             this->mem_lmt -= lmt_diff;
             this->check_capacity();
-        }
-        else {
+        } else {
             this->mem_lmt += lmt_diff;
         }
     }
