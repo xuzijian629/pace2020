@@ -271,7 +271,7 @@ private:
         while (true) {
             // exactly:
             size_t databytes =
-                (32 + sizeof(BITSET)) * this->n + 8 * this->edges_cnt + (sizeof(BITSET)) * this->seps_cnt;
+                (32 + (sizeof(BITSET) << 1)) * this->n + 8 * this->edges_cnt + (sizeof(BITSET)) * this->seps_cnt;
             if (databytes <= this->mem_lmt)
                 break;
             else
