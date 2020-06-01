@@ -68,7 +68,7 @@ void gen_blocks(const Graph& g, int nax, int tl) {
             cerr << "(" << ss.size() << " unique)" << endl;
             min_block_size = min(min_block_size, i);
             // ソートしないほうが混ざってよさそう？
-            int blocks_max = min(200, 1000 * BITSET_MAX_SIZE / (i * i));
+            int blocks_max = min<int>(200, 200.0 * BITSET_MAX_SIZE / pow(i, 1.5));
             uniq.resize(min((int)uniq.size(), blocks_max));
             BLOCKS[i] = uniq;
         }
