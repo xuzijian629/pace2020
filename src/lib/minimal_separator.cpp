@@ -178,19 +178,21 @@ void vector_concat(std::vector<T>& a, std::vector<T>& b) {
 }
 
 constexpr int r_prune = 5;
-vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, const BITSET& F, BITSET* min_over,
+void enum_rec(vector<BITSET> &ret, const Graph& g, int k, int a, int b, const BITSET& A, const BITSET& F, BITSET* min_over,
                         const BITSET& Cb) {
     // min_over = nullptr は、全体集合の代わり（毎回全体集合を指定すると重いので）
-    if (F.count() > k) return {};
+    if (F.count() > k) return;
     auto Na = open_neighbors(g, A);
-    if (A.count() > Cb.count()) return {};
-    if (!is_subset(F, open_neighbors(g, Cb))) return {};
+    if (A.count() > Cb.count()) return;
+    if (!is_subset(F, open_neighbors(g, Cb))) return;
     if (Na == F) {
         assert(open_neighbors(g, Cb) == F);
-        if (b == get_min(Cb, min_over))
-            return {Na};
+        if (b == get_min(Cb, min_over)) {
+            ret.push_back(Na);
+            return;
+        }
         else
-            return {};
+            return;
     }
 
     auto dif = difference(Na, F);
@@ -204,29 +206,26 @@ vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, co
         int d = 0;
         sort(P.begin(), P.end(), [](auto& p, auto& q) { return p.size() < q.size(); });
         for (int i = 0; i < P.size() - (k - F.count()); i++) d += P[i].size();
-        if (A.count() + d > min((int)Cb.count(), (g.n() - k) / 2)) return {};
+        if (A.count() + d > min((int)Cb.count(), (g.n() - k) / 2)) return;
     }
 
-    vector<BITSET> ret;
     int v = dif._Find_first();
     auto F_(F);
     F_.set(v);
-    {
-        auto enum_buf = enum_rec(g, k, a, b, A, F_, min_over, Cb);
-        vector_concat(ret, enum_buf);
-    }
+    //
+    enum_rec(ret, g, k, a, b, A, F_, min_over, Cb); 
+    //
     bool can_cut = (min_over ? (*min_over).test(v) && v < a : v < a);
     if (!can_cut) {
         BITSET nxtCb;
         auto A_ = compute_A_(g, A, b, v, &nxtCb);
         if (A_.any()) {
-            {
-                auto enum_buf = enum_rec(g, k, a, b, A_, F, min_over, nxtCb);
-                vector_concat(ret, enum_buf);
-            }
+            //
+            enum_rec(ret, g, k, a, b, A_, F, min_over, nxtCb); 
+            //
         }
     }
-    return unique(ret);
+    return;
 }
 
 Graph local(const Graph& g, const BITSET& C) {
@@ -330,8 +329,7 @@ vector<BITSET> list_exact_slow(const Graph& g, int k) {
                 A = components_contain(g, open_neighbors(g, Cb), a);
                 if (get_min(A) != a) continue;
                 {
-                    auto enum_buf = enum_rec(g, k, a, b, A, F, min_over, Cb);
-                    vector_concat(ret, enum_buf);
+                    enum_rec(ret, g, k, a, b, A, F, min_over, Cb);
                 }
             }
         }
@@ -395,7 +393,8 @@ vector<BITSET> list_exact(const Graph& g, int k) {
                 A = components_contain(g, open_neighbors(g, Cb), a);
                 if (get_min(A, &X) != a) continue;
                 {
-                    auto enum_buf = enum_rec(g, k, a, b, A, F, &X, Cb);
+                    std::vector<BITSET> enum_buf;
+                    enum_rec(enum_buf, g, k, a, b, A, F, &X, Cb);
                     vector_concat(ret, enum_buf);
                 }
             }
