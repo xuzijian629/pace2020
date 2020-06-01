@@ -32,7 +32,7 @@ struct main_memo_t {
 };
 unordered_map<BITSET, main_memo_t> main_memo;
 
-Graph solve(const Graph& g, int k, bool use_block) {
+Graph solve(const Graph& g, int k, int use_block_size_max = 1e9) {
     if (g.n() == 1) {
         return Graph(g.nodes._Find_first());
     }
@@ -68,7 +68,7 @@ Graph solve(const Graph& g, int k, bool use_block) {
             BITSET rem;
             rem.set(v);
             for (auto& C : components(remove(g, rem))) {
-                Graph subtree = solve(induced(g, C), k - 1, use_block);
+                Graph subtree = solve(induced(g, C), k - 1, use_block_size_max);
                 if (!subtree.n()) {
                     main_memo_ptr->lb = max(main_memo_ptr->lb, k + 1);
                     return Graph();
@@ -92,9 +92,9 @@ Graph solve(const Graph& g, int k, bool use_block) {
     for (auto& s : seps) {
         bool ok = true;
         int n = g.n();
-        if (use_block && min_block_size != 1e9) {
+        if (min_block_size != 1e9) {
             int lim = k - s.count();
-            for (int i = min_block_size; i != -1; i = NEXT_BLOCK[i]) {
+            for (int i = min_block_size; i != -1 && i <= use_block_size_max; i = NEXT_BLOCK[i]) {
                 if (i < n - s.count()) {
                     for (int j = 0; j < BLOCKS[i].size(); j++) {
                         if (BLOCK_TD[i][j] <= lim) break;
@@ -143,7 +143,7 @@ Graph solve(const Graph& g, int k, bool use_block) {
 
         vector<Graph> subtrees;
         for (auto& C : comps) {
-            Graph subtree = solve(induced(g, C), k - s.count(), use_block);
+            Graph subtree = solve(induced(g, C), k - s.count(), use_block_size_max);
             if (!subtree.n()) {
                 ok = false;
                 break;
@@ -162,10 +162,10 @@ Graph solve(const Graph& g, int k, bool use_block) {
     return Graph();
 }
 
-Graph treedepth_decomp(Graph g, bool use_block = true) {
+Graph treedepth_decomp(Graph g, int use_block_max_size = 1e9) {
     for (int k = 1;; k++) {
         if (prune_by_td_lb(g, k)) continue;
-        Graph decomp = solve(g, k, use_block);
+        Graph decomp = solve(g, k, use_block_max_size);
         if (decomp.n()) {
             return decomp;
         }
