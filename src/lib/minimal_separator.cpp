@@ -295,9 +295,17 @@ public:
             return nullptr;
         }
     }
-    void reduce_memcapacity(size_t lmt_diff) {
-        this->mem_lmt -= lmt_diff;
-        this->check_capacity();
+    enum op_t {
+        SUB, ADD
+    };
+    void change_memcapacity(size_t lmt_diff, op_t op) {
+        if (op == SUB) {
+            this->mem_lmt -= lmt_diff;
+            this->check_capacity();
+        }
+        else {
+            this->mem_lmt += lmt_diff;
+        }
     }
 };
 

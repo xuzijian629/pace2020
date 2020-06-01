@@ -15,31 +15,78 @@ using namespace std;
 // 不可能なときは empty なグラフを返す
 
 // induced subgraph なので g 覚えなくて良い
-struct main_memo_t {
+class main_memo_t {
+public:
     int lb = 0;
     int ub = INT_MAX;
-    Graph* ans = nullptr;
+    Graph *tree = nullptr;
+    BITSET *sep = nullptr; // either one of tree or sep
     main_memo_t() {
         // entry とは別にまた sizeof(BITSET) 分あるらしい
-        sep_dictionary.reduce_memcapacity((sizeof(BITSET) << 1) + sizeof(main_memo_t));
+        sep_dictionary.change_memcapacity((sizeof(BITSET) << 1) + sizeof(main_memo_t), Sep_Dictionary::op_t::SUB);
     }
-    ~main_memo_t() { delete this->ans; }
-    void register_ans(const Graph& g) {
-        if (this->ans == nullptr) {
-            sep_dictionary.reduce_memcapacity(sizeof(Graph));
-        } else {
-            delete this->ans;
+    ~main_memo_t() { delete this->sep; }
+    void register_sep(const BITSET& sep) {
+        this->erase_record();
+        sep_dictionary.change_memcapacity(sizeof(BITSET), Sep_Dictionary::op_t::SUB);
+        this->sep = new BITSET(sep);
+    }
+    void register_tree(const Graph& tree) {
+        this->erase_record();
+        sep_dictionary.change_memcapacity(sizeof(Graph), Sep_Dictionary::op_t::SUB);
+        this->tree = new Graph(tree);
+    }
+private:
+    void erase_record() {
+        if (this->sep != nullptr) {
+            sep_dictionary.change_memcapacity(sizeof(BITSET), Sep_Dictionary::op_t::ADD);
+            delete this->sep;
+            this->sep = nullptr;
         }
-        this->ans = new Graph(g);
+        if (this->tree != nullptr) {
+            sep_dictionary.change_memcapacity(sizeof(Graph), Sep_Dictionary::op_t::ADD);
+            delete this->tree;
+            this->tree = nullptr;
+        }
     }
 };
 
 unordered_map<BITSET, main_memo_t> main_memo;
 
-Graph solve(const Graph& g, int k, bool use_block) {
-    if (g.n() == 1) {
+// get tree from main memo
+Graph get_tree_from_main_memo(const Graph &g) {
+    if (g.nodes.count() == 1) {
         return Graph(g.nodes._Find_first());
     }
+    main_memo_t* main_memo_ptr;
+    assert(main_memo.count(g.nodes));
+    main_memo_ptr = &(main_memo[g.nodes]);
+    assert(!(main_memo_ptr->tree == nullptr && main_memo_ptr->sep == nullptr));
+    if (main_memo_ptr->tree != nullptr) {
+        return *(main_memo_ptr->tree);
+    }
+    if (main_memo_ptr->sep != nullptr) {
+        assert(main_memo_ptr->sep->count());
+        size_t v = main_memo_ptr->sep->_Find_first();
+        Graph decomp(v);
+        size_t pre_v = v;
+        for (v = main_memo_ptr->sep->_Find_next(v); v < main_memo_ptr->sep->size(); v = main_memo_ptr->sep->_Find_next(v)) {
+            decomp.add_edge(pre_v, v);
+            pre_v = v;
+        }
+        for (auto& C : components(remove(g, *(main_memo_ptr->sep)))) {
+                Graph subtree = get_tree_from_main_memo(induced(g, C));
+                merge(decomp, subtree, pre_v, subtree.root);
+        }
+        return decomp;
+    }
+}
+
+// return true if there is an answer, either the separator or the tree is guaranteed to be registered
+// if you want to get the graph, call get_tree_from_main_memo(g)
+bool solve(const Graph& g, int k, bool use_block) {
+    assert(k >= 1);
+    if (g.n() == 1) return true;
 
     main_memo_t* main_memo_ptr;
     // look up memo,
@@ -48,10 +95,10 @@ Graph solve(const Graph& g, int k, bool use_block) {
     if (main_memo.count(g.nodes)) {
         main_memo_ptr = &(main_memo[g.nodes]);
         if (k < main_memo_ptr->lb) {
-            return Graph();
+            return false;
         }
         if (main_memo_ptr->ub <= k) {
-            return *(main_memo_ptr->ans);
+            return true;
         }
     } else {
         main_memo_ptr = &(main_memo[g.nodes]);
@@ -61,27 +108,26 @@ Graph solve(const Graph& g, int k, bool use_block) {
     int heur_depth = depth(heuristic_decomp, heuristic_decomp.root);
     if (heur_depth <= k) {
         main_memo_ptr->ub = min(main_memo_ptr->ub, heur_depth);
-        main_memo_ptr->register_ans(heuristic_decomp);
-        return *(main_memo_ptr->ans);
+        main_memo_ptr->register_tree(heuristic_decomp);
+        return true;
     }
 
     // apex vertex があれば選ぶ
     FOR_EACH(v, g.nodes) {
         if (at(g.adj, v).count() == g.n() - 1) {
-            Graph decomp(v);
             BITSET rem;
             rem.set(v);
+            BITSET s = rem;
             for (auto& C : components(remove(g, rem))) {
-                Graph subtree = solve(induced(g, C), k - 1, use_block);
-                if (!subtree.n()) {
+                bool ok = solve(induced(g, C), k - 1, use_block);
+                if (!ok) {
                     main_memo_ptr->lb = max(main_memo_ptr->lb, k + 1);
-                    return Graph();
+                    return false;
                 }
-                merge(decomp, subtree, v, subtree.root);
             }
             main_memo_ptr->ub = min(main_memo_ptr->ub, k);
-            main_memo_ptr->register_ans(decomp);
-            return *(main_memo_ptr->ans);
+            main_memo_ptr->register_sep(s);
+            return true;
         }
     }
 
@@ -90,7 +136,7 @@ Graph solve(const Graph& g, int k, bool use_block) {
     auto seps = list_exact(g, min(k - 1, treewidth_ub(g)));
     if (seps.empty()) {
         main_memo_ptr->lb = max(main_memo_ptr->lb, k + 1);
-        return Graph();
+        return false;
     }
 
     for (auto& s : seps) {
@@ -135,43 +181,24 @@ Graph solve(const Graph& g, int k, bool use_block) {
             }
         }
         if (!ok) continue;
-
-        Graph decomp;
-        vector<int> nodes;
-        FOR_EACH(v, s) nodes.push_back(v);
-        decomp.add_node(nodes[0]);
-        decomp.root = nodes[0];
-        for (int i = 1; i < nodes.size(); i++) {
-            decomp.add_edge(nodes[i - 1], nodes[i]);
-        }
-
-        vector<Graph> subtrees;
         for (auto& C : comps) {
-            Graph subtree = solve(induced(g, C), k - s.count(), use_block);
-            if (!subtree.n()) {
-                ok = false;
-                break;
-            }
-            subtrees.push_back(subtree);
+            ok = solve(induced(g, C), k - s.count(), use_block);
+            if (!ok) break;
         }
         if (!ok) continue;
-        for (auto& subtree : subtrees) {
-            merge(decomp, subtree, nodes.back(), subtree.root);
-        }
         main_memo_ptr->ub = min(main_memo_ptr->ub, k);
-        main_memo_ptr->register_ans(decomp);
-        return *(main_memo_ptr->ans);
+        main_memo_ptr->register_sep(s);
+        return true;
     }
     main_memo_ptr->lb = max(main_memo_ptr->lb, k + 1);
-    return Graph();
+    return false;
 }
 
 Graph treedepth_decomp(Graph g, bool use_block = true) {
     for (int k = 1;; k++) {
         if (prune_by_td_lb(g, k)) continue;
-        Graph decomp = solve(g, k, use_block);
-        if (decomp.n()) {
-            return decomp;
+        if (solve(g, k, use_block)) {
+            return get_tree_from_main_memo(g);
         }
     }
 }
