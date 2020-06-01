@@ -106,6 +106,7 @@ void init_blocks(const Graph& g, int tl_millis) {
                 break;
             }
         }
+        cerr << "obtained " << sz << " blocks for size " << i << endl;
         sort(tmp.begin(), tmp.end(), [](auto& a, auto& b) { return a.second > b.second; });
         BLOCK_TD[i].resize(sz);
         for (int j = 0; j < sz; j++) {
