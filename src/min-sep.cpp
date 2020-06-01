@@ -25,7 +25,7 @@ public:
         // entry とは別にまた sizeof(BITSET) 分あるらしい
         sep_dictionary.change_memcapacity((sizeof(BITSET) << 1) + sizeof(main_memo_t), Sep_Dictionary::op_t::SUB);
     }
-    ~main_memo_t() { delete this->sep; }
+    ~main_memo_t() { this->erase_record(); }
     void register_sep(const BITSET& sep) {
         this->erase_record();
         sep_dictionary.change_memcapacity(sizeof(BITSET), Sep_Dictionary::op_t::SUB);
