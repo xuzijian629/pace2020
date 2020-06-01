@@ -249,7 +249,7 @@ private:
     size_t n = 0;                    // number of entries
     size_t edges_cnt = 0;            // sum of adjsprs.capacity()
     size_t seps_cnt = 0;             // sum of seps.capacity()
-    size_t mem_lmt = 7247757312ULL;  // 6.75 GB
+    size_t mem_lmt = 7784628224ULL;  // 7.25 GB
     void erase(const hash_t h) {
         assert(h == *(sep_memos[h].list_itr));
         hash_lst.erase(sep_memos[h].list_itr);
@@ -262,7 +262,7 @@ private:
         while (true) {
             // exactly:
             size_t databytes =
-                (32 + sizeof(BITSET)) * this->n + 8 * this->edges_cnt + (sizeof(BITSET) + 4) * this->seps_cnt;
+                (32 + sizeof(BITSET)) * this->n + 8 * this->edges_cnt + (sizeof(BITSET)) * this->seps_cnt;
             if (databytes <= this->mem_lmt)
                 break;
             else
@@ -295,9 +295,17 @@ public:
             return nullptr;
         }
     }
-    void reduce_memcapacity(size_t lmt_diff) {
-        this->mem_lmt -= lmt_diff;
-        this->check_capacity();
+    enum op_t {
+        SUB, ADD
+    };
+    void change_memcapacity(size_t lmt_diff, op_t op) {
+        if (op == SUB) {
+            this->mem_lmt -= lmt_diff;
+            this->check_capacity();
+        }
+        else {
+            this->mem_lmt += lmt_diff;
+        }
     }
 };
 
@@ -333,6 +341,23 @@ bool is_separators(const Graph& g, const vector<BITSET>& seps) {
     return true;
 }
 
+// range = [l, r), return first value causing "t" in evalfunc that returns l->[f,...,f,t,...,t)->r
+// NOTE: if [f,...,f) then return r, if [l, r) = empty set then invalid use
+template <class val_t, class bsargv_t, class evalfunc_t>
+val_t upper_bsearch(val_t l, val_t r, const bsargv_t& v, evalfunc_t evalfunc) {
+    if (r - l == 1) {
+        if (evalfunc(l, v))
+            return l;
+        else
+            return r;
+    }
+    val_t m = (l + r) / 2;
+    if (evalfunc(m, v))
+        return upper_bsearch<val_t, bsargv_t>(l, m, v, evalfunc);
+    else
+        return upper_bsearch<val_t, bsargv_t>(m, r, v, evalfunc);
+}
+
 // list all minimal separators of size at most k
 vector<BITSET> list_exact(const Graph& g, int k) {
     vector<BITSET> ret;
@@ -342,12 +367,11 @@ vector<BITSET> list_exact(const Graph& g, int k) {
     if (sep_memo != nullptr) {
         if (sep_memo->nodes == g.nodes && sep_memo->adjsprs == g_adjsprs) {
             if (k <= sep_memo->k) {
-                for (const auto& sep : sep_memo->seps) {
-                    if (sep.count() <= k)
-                        ret.push_back(sep);
-                    else
-                        break;
-                }
+                size_t r = upper_bsearch(size_t(0), sep_memo->seps.size(), sep_memo->seps,
+                                         [=](size_t i, const std::vector<BITSET>& a) { return a[i].count() > k; });
+                ret.resize(r);
+                assert(r == sep_memo->seps.size() || sep_memo->seps[r].count() > k);
+                std::copy(sep_memo->seps.begin(), sep_memo->seps.begin() + r, ret.begin());
                 return ret;
             }
         }
