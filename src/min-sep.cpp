@@ -84,7 +84,7 @@ Graph get_tree_from_main_memo(const Graph &g) {
 
 // return true if there is an answer, either the separator or the tree is guaranteed to be registered
 // if you want to get the graph, call get_tree_from_main_memo(g)
-bool solve(const Graph& g, int k, bool use_block) {
+bool solve(const Graph& g, int k, int use_block_size_max = 1e9) {
     assert(k >= 1);
     if (g.n() == 1) return true;
 
@@ -119,7 +119,7 @@ bool solve(const Graph& g, int k, bool use_block) {
             rem.set(v);
             BITSET s = rem;
             for (auto& C : components(remove(g, rem))) {
-                bool ok = solve(induced(g, C), k - 1, use_block);
+                bool ok = solve(induced(g, C), k - 1, use_block_size_max);
                 if (!ok) {
                     main_memo_ptr->lb = max(main_memo_ptr->lb, k + 1);
                     return false;
@@ -142,9 +142,9 @@ bool solve(const Graph& g, int k, bool use_block) {
     for (auto& s : seps) {
         bool ok = true;
         int n = g.n();
-        if (use_block && min_block_size != 1e9) {
+        if (min_block_size != 1e9) {
             int lim = k - s.count();
-            for (int i = min_block_size; i != -1; i = NEXT_BLOCK[i]) {
+            for (int i = min_block_size; i != -1 && i <= use_block_size_max; i = NEXT_BLOCK[i]) {
                 if (i < n - s.count()) {
                     for (int j = 0; j < BLOCKS[i].size(); j++) {
                         if (BLOCK_TD[i][j] <= lim) break;
@@ -182,7 +182,7 @@ bool solve(const Graph& g, int k, bool use_block) {
         }
         if (!ok) continue;
         for (auto& C : comps) {
-            ok = solve(induced(g, C), k - s.count(), use_block);
+            ok = solve(induced(g, C), k - s.count(), use_block_size_max);
             if (!ok) break;
         }
         if (!ok) continue;
@@ -194,10 +194,10 @@ bool solve(const Graph& g, int k, bool use_block) {
     return false;
 }
 
-Graph treedepth_decomp(Graph g, bool use_block = true) {
+Graph treedepth_decomp(Graph g, int use_block_max_size = 1e9) {
     for (int k = 1;; k++) {
         if (prune_by_td_lb(g, k)) continue;
-        if (solve(g, k, use_block)) {
+        if (solve(g, k, use_block, use_block_max_size)) {
             return get_tree_from_main_memo(g);
         }
     }
