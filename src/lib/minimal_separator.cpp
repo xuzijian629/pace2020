@@ -270,8 +270,8 @@ private:
     void check_capacity() {
         while (true) {
             // exactly:
-            size_t databytes =
-                (32 + (sizeof(BITSET) << 1)) * this->n + 8 * this->edges_cnt + (sizeof(BITSET)) * this->seps_cnt;
+            size_t databytes = ((sizeof(int) << 1) + sizeof(sep_memo_t)) * this->n + 8 * this->edges_cnt +
+                               (sizeof(BITSET)) * this->seps_cnt;
             if (databytes <= this->mem_lmt)
                 break;
             else
