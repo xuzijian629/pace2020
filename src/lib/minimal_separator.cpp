@@ -170,6 +170,13 @@ bool operator==(const Graph& g1, const Graph& g2) {
     return true;
 }
 
+template <class T>
+void vector_concat(std::vector<T> &a, std::vector<T> &b) {
+    size_t pre_size = a.size();
+    a.resize(pre_size + b.size());
+    std::copy(b.begin(), b.end(), a.begin() + pre_size);
+}
+
 constexpr int r_prune = 5;
 vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, const BITSET& F, BITSET* min_over,
                         const BITSET& Cb) {
@@ -204,17 +211,20 @@ vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, co
     int v = dif._Find_first();
     auto F_(F);
     F_.set(v);
-    for (auto& s : enum_rec(g, k, a, b, A, F_, min_over, Cb)) {
-        ret.push_back(s);
+    {
+        auto enum_buf = enum_rec(g, k, a, b, A, F_, min_over, Cb); 
+        vector_concat(ret, enum_buf);
     }
     bool can_cut = (min_over ? (*min_over).test(v) && v < a : v < a);
     if (!can_cut) {
         BITSET nxtCb;
         auto A_ = compute_A_(g, A, b, v, &nxtCb);
         if (A_.any()) {
-            for (auto& s : enum_rec(g, k, a, b, A_, F, min_over, nxtCb)) {
-                ret.push_back(s);
+            {
+                auto enum_buf = enum_rec(g, k, a, b, A_, F, min_over, nxtCb); 
+                vector_concat(ret, enum_buf);
             }
+
         }
     }
     return unique(ret);
@@ -323,8 +333,9 @@ vector<BITSET> list_exact_slow(const Graph& g, int k) {
                 auto Cb = components_contain(g, Na, b);
                 A = components_contain(g, open_neighbors(g, Cb), a);
                 if (get_min(A) != a) continue;
-                for (auto& s : enum_rec(g, k, a, b, A, F, min_over, Cb)) {
-                    ret.push_back(s);
+                {
+                    auto enum_buf = enum_rec(g, k, a, b, A, F, min_over, Cb);
+                    vector_concat(ret, enum_buf);
                 }
             }
         }
@@ -387,8 +398,9 @@ vector<BITSET> list_exact(const Graph& g, int k) {
                 auto Cb = components_contain(g, Na, b);
                 A = components_contain(g, open_neighbors(g, Cb), a);
                 if (get_min(A, &X) != a) continue;
-                for (auto& s : enum_rec(g, k, a, b, A, F, &X, Cb)) {
-                    ret.push_back(s);
+                {
+                    auto enum_buf = enum_rec(g, k, a, b, A, F, &X, Cb);
+                    vector_concat(ret, enum_buf);
                 }
             }
         }
@@ -397,8 +409,9 @@ vector<BITSET> list_exact(const Graph& g, int k) {
         if (conn.test(v)) continue;
         auto N = open_neighbors(g, conn);
         if (N.count() <= k) ret.push_back(N);
-        for (auto& s : list_exact(local(g, join(conn, X)), k)) {
-            ret.push_back(s);
+        {
+            auto enum_buf = list_exact(local(g, join(conn, X)), k);
+            vector_concat(ret, enum_buf);
         }
     }
     ret = unique(ret);

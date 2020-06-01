@@ -197,7 +197,7 @@ bool solve(const Graph& g, int k, int use_block_size_max = 1e9) {
 Graph treedepth_decomp(Graph g, int use_block_max_size = 1e9) {
     for (int k = 1;; k++) {
         if (prune_by_td_lb(g, k)) continue;
-        if (solve(g, k, use_block, use_block_max_size)) {
+        if (solve(g, k, use_block_max_size)) {
             return get_tree_from_main_memo(g);
         }
     }
