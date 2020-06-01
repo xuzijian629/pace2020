@@ -19,8 +19,8 @@ class main_memo_t {
 public:
     int lb = 0;
     int ub = INT_MAX;
-    Graph *tree = nullptr;
-    BITSET *sep = nullptr; // either one of tree or sep
+    Graph* tree = nullptr;
+    BITSET* sep = nullptr;  // either one of tree or sep
     main_memo_t() {
         // entry とは別にまた sizeof(BITSET) 分あるらしい
         sep_dictionary.change_memcapacity((sizeof(BITSET) << 1) + sizeof(main_memo_t), Sep_Dictionary::op_t::SUB);
@@ -36,6 +36,7 @@ public:
         sep_dictionary.change_memcapacity(sizeof(Graph), Sep_Dictionary::op_t::SUB);
         this->tree = new Graph(tree);
     }
+
 private:
     void erase_record() {
         if (this->sep != nullptr) {
@@ -54,7 +55,7 @@ private:
 unordered_map<BITSET, main_memo_t> main_memo;
 
 // get tree from main memo
-Graph get_tree_from_main_memo(const Graph &g) {
+Graph get_tree_from_main_memo(const Graph& g) {
     if (g.nodes.count() == 1) {
         return Graph(g.nodes._Find_first());
     }
@@ -70,16 +71,18 @@ Graph get_tree_from_main_memo(const Graph &g) {
         size_t v = main_memo_ptr->sep->_Find_first();
         Graph decomp(v);
         size_t pre_v = v;
-        for (v = main_memo_ptr->sep->_Find_next(v); v < main_memo_ptr->sep->size(); v = main_memo_ptr->sep->_Find_next(v)) {
+        for (v = main_memo_ptr->sep->_Find_next(v); v < main_memo_ptr->sep->size();
+             v = main_memo_ptr->sep->_Find_next(v)) {
             decomp.add_edge(pre_v, v);
             pre_v = v;
         }
         for (auto& C : components(remove(g, *(main_memo_ptr->sep)))) {
-                Graph subtree = get_tree_from_main_memo(induced(g, C));
-                merge(decomp, subtree, pre_v, subtree.root);
+            Graph subtree = get_tree_from_main_memo(induced(g, C));
+            merge(decomp, subtree, pre_v, subtree.root);
         }
         return decomp;
     }
+    assert(false);
 }
 
 // return true if there is an answer, either the separator or the tree is guaranteed to be registered
