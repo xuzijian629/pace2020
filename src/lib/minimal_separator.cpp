@@ -295,15 +295,12 @@ public:
             return nullptr;
         }
     }
-    enum op_t {
-        SUB, ADD
-    };
+    enum op_t { SUB, ADD };
     void change_memcapacity(size_t lmt_diff, op_t op) {
         if (op == SUB) {
             this->mem_lmt -= lmt_diff;
             this->check_capacity();
-        }
-        else {
+        } else {
             this->mem_lmt += lmt_diff;
         }
     }
