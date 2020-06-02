@@ -12,7 +12,7 @@ int treedepth_exact(const Graph& g, int use_block_max_size) {
 }
 
 constexpr int tl_preprocess = 600000;
-constexpr int precompute_iter = 1000;
+constexpr int tl_enumerate = 60000;
 int min_block_size = 1e9;
 
 array<vector<BITSET>, BITSET_MAX_SIZE> BLOCKS;
@@ -40,12 +40,18 @@ void decompose(const Graph& g, int min_n, int max_n) {
 
 bool is_connected(const Graph& g) { return components(g).size() == 1; }
 
-void gen_blocks(const Graph& g, int nax) {
-    for (int max_n = 5; max_n <= nax; max_n++) {
-        for (int i = 0; i < precompute_iter; i++) {
-            int min_n = max_n * 0.7;
-            decompose(g, min_n, max_n);
+void gen_blocks(const Graph& g, int nax, int tl) {
+    while (tl > 0) {
+        auto start = chrono::steady_clock::now();
+        for (int max_n = 5; max_n <= nax; max_n++) {
+            int min_n = max_n / 2;
+            for (int i = 0; i < max_n; i++) {
+                decompose(g, min_n, max_n);
+            }
         }
+        auto finish = chrono::steady_clock::now();
+        if (BLOCKS[nax >= 50 ? max(50, nax / 2) : nax / 2].size() > 1000) break;
+        tl -= chrono::duration_cast<chrono::milliseconds>(finish - start).count();
     }
     for (int i = 1; i <= nax; i++) {
         int sz = BLOCKS[i].size();
@@ -62,7 +68,7 @@ void gen_blocks(const Graph& g, int nax) {
             cerr << "(" << ss.size() << " unique)" << endl;
             min_block_size = min(min_block_size, i);
             // ソートしないほうが混ざってよさそう？
-            int blocks_max = min(200, 1000 * BITSET_MAX_SIZE / (i * i));
+            int blocks_max = min<int>(200, 200.0 * BITSET_MAX_SIZE / pow(i, 1.5));
             uniq.resize(min((int)uniq.size(), blocks_max));
             BLOCKS[i] = uniq;
         }
@@ -82,25 +88,31 @@ void init_blocks(const Graph& g, int tl_millis) {
     int n = g.n();
     int nax = min(100, int(n * 0.9));
     prepare_d_flow(g);
-    gen_blocks(g, nax);
+    gen_blocks(g, nax, tl_enumerate);
 
     for (int i = 1; i <= nax; i++) {
         int sz = BLOCKS[i].size();
         if (!sz) continue;
-        auto start = chrono::steady_clock::now();
         vector<pair<BITSET, int>> tmp;
         for (int j = 0; j < sz; j++) {
+            auto start = chrono::steady_clock::now();
             int d = treedepth_exact(induced(g, BLOCKS[i][j]), i - 1);
             tmp.emplace_back(BLOCKS[i][j], d);
+            auto finish = chrono::steady_clock::now();
+            tl_millis -= chrono::duration_cast<chrono::milliseconds>(finish - start).count();
+            if (tl_millis < 0) {
+                sz = j + 1;
+                BLOCKS[i].resize(sz);
+                break;
+            }
         }
+        cerr << "obtained " << sz << " blocks for size " << i << endl;
         sort(tmp.begin(), tmp.end(), [](auto& a, auto& b) { return a.second > b.second; });
         BLOCK_TD[i].resize(sz);
         for (int j = 0; j < sz; j++) {
             BLOCKS[i][j] = tmp[j].first;
             BLOCK_TD[i][j] = tmp[j].second;
         }
-        auto finish = chrono::steady_clock::now();
-        tl_millis -= chrono::duration_cast<chrono::milliseconds>(finish - start).count();
         if (tl_millis < 0) {
             for (int j = i; j <= nax; j++) {
                 NEXT_BLOCK[j] = -1;

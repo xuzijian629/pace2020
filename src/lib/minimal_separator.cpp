@@ -89,7 +89,7 @@ BITSET compute_A_(const Graph& g, const BITSET& A, int b, int v, BITSET* Cb) {
 namespace std {
 bool operator<(const BITSET& a, const BITSET& b) {
     int k = (a ^ b)._Find_first();
-    if (k == BITSET_MAX_SIZE) return false;
+    if (k == BITSET_ACTUAL_SIZE) return false;
     return a[k] < b[k];
 }
 }  // namespace std
@@ -159,6 +159,7 @@ hash_t get_hash(const Graph& g) {
         ret += (long long)get_hash(at(g.adj, a)) * init.pows2[a] % mod;
         if (ret >= mod) ret -= mod;
     }
+    ret++;
     return ret;
 }
 
@@ -170,20 +171,28 @@ bool operator==(const Graph& g1, const Graph& g2) {
     return true;
 }
 
+template <class T>
+void vector_concat(std::vector<T>& a, std::vector<T>& b) {
+    size_t pre_size = a.size();
+    a.resize(pre_size + b.size());
+    std::copy(b.begin(), b.end(), a.begin() + pre_size);
+}
+
 constexpr int r_prune = 5;
-vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, const BITSET& F, BITSET* min_over,
-                        const BITSET& Cb) {
+void enum_rec(vector<BITSET>& ret, const Graph& g, int k, int a, int b, const BITSET& A, const BITSET& F,
+              BITSET* min_over, const BITSET& Cb) {
     // min_over = nullptr は、全体集合の代わり（毎回全体集合を指定すると重いので）
-    if (F.count() > k) return {};
+    if (F.count() > k) return;
     auto Na = open_neighbors(g, A);
-    if (A.count() > Cb.count()) return {};
-    if (!is_subset(F, open_neighbors(g, Cb))) return {};
+    if (A.count() > Cb.count()) return;
+    if (!is_subset(F, open_neighbors(g, Cb))) return;
     if (Na == F) {
         assert(open_neighbors(g, Cb) == F);
-        if (b == get_min(Cb, min_over))
-            return {Na};
-        else
-            return {};
+        if (b == get_min(Cb, min_over)) {
+            ret.push_back(Na);
+            return;
+        } else
+            return;
     }
 
     auto dif = difference(Na, F);
@@ -197,27 +206,26 @@ vector<BITSET> enum_rec(const Graph& g, int k, int a, int b, const BITSET& A, co
         int d = 0;
         sort(P.begin(), P.end(), [](auto& p, auto& q) { return p.size() < q.size(); });
         for (int i = 0; i < P.size() - (k - F.count()); i++) d += P[i].size();
-        if (A.count() + d > min((int)Cb.count(), (g.n() - k) / 2)) return {};
+        if (A.count() + d > min((int)Cb.count(), (g.n() - k) / 2)) return;
     }
 
-    vector<BITSET> ret;
     int v = dif._Find_first();
     auto F_(F);
     F_.set(v);
-    for (auto& s : enum_rec(g, k, a, b, A, F_, min_over, Cb)) {
-        ret.push_back(s);
-    }
+    //
+    enum_rec(ret, g, k, a, b, A, F_, min_over, Cb);
+    //
     bool can_cut = (min_over ? (*min_over).test(v) && v < a : v < a);
     if (!can_cut) {
         BITSET nxtCb;
         auto A_ = compute_A_(g, A, b, v, &nxtCb);
         if (A_.any()) {
-            for (auto& s : enum_rec(g, k, a, b, A_, F, min_over, nxtCb)) {
-                ret.push_back(s);
-            }
+            //
+            enum_rec(ret, g, k, a, b, A_, F, min_over, nxtCb);
+            //
         }
     }
-    return unique(ret);
+    return;
 }
 
 Graph local(const Graph& g, const BITSET& C) {
@@ -233,71 +241,119 @@ Graph local(const Graph& g, const BITSET& C) {
     return ret;
 }
 
+//====================================================
+// format of separator memo
+//----------------------------------------------------
+// 0      h; (hash number, 1-indexed)
+// 1      k; (corresponded to treedepth)
+// 2      adjlen; adjsprs expressions length
+// 3      seplen; separator expressions length
+// 4      nodes; (vertex set)
+// 5      { adjsprs expressions }
+// 5+adjl { separator expressions }
+//----------------------------------------------------
+// total: (adjlen + seplen + 5) * sizeof(BITSET) bytes
+//====================================================
+#ifndef _MY_STATIC_MEMBYTE
+#define _MY_STATIC_MEMBYTE 7516192768  // 7GB for seps
+#endif
+#define _MY_STATIC_MEMSIZE (_MY_STATIC_MEMBYTE / sizeof(BITSET))
+std::vector<BITSET> static_memory(_MY_STATIC_MEMSIZE);
+size_t static_memory_ptr = 0;
+
+// use as static class
 class Sep_Dictionary {
 private:
-    struct sep_memo_t {
-        int k;
-        BITSET nodes;
-        ADJSPRS adjsprs;
-        size_t adjsprs_size;
-        vector<BITSET> seps;
-        size_t seps_size;
-        list<hash_t>::iterator list_itr;
-    };
-    unordered_map<hash_t, sep_memo_t> sep_memos;
-    list<hash_t> hash_lst;           // (begin) new -...-> old (back)
-    size_t n = 0;                    // number of entries
-    size_t edges_cnt = 0;            // sum of adjsprs.capacity()
-    size_t seps_cnt = 0;             // sum of seps.capacity()
-    size_t mem_lmt = 7247757312ULL;  // 6.75 GB
-    void erase(const hash_t h) {
-        assert(h == *(sep_memos[h].list_itr));
-        hash_lst.erase(sep_memos[h].list_itr);
-        n--;
-        edges_cnt -= sep_memos[h].adjsprs_size;
-        seps_cnt -= sep_memos[h].seps_size;
-        sep_memos.erase(h);
+    unordered_map<hash_t, size_t> sep_memo_mp;  // hash is 1-indexed, static_memory[sep_memo_mp[h]] == h
+    // return erased length
+    size_t erase_hash(const hash_t h) {
+        size_t offset = sep_memo_mp[h];
+        assert(static_memory[offset].to_ullong() == size_t(h));
+        size_t adjlen = static_memory[offset + 2].to_ullong();
+        size_t seplen = static_memory[offset + 3].to_ullong();
+        size_t totallen = 5 + adjlen + seplen;
+        for (size_t i = offset; i < offset + totallen; ++i) {
+            static_memory[i].reset();
+        }
+        sep_memo_mp.erase(h);
+        return totallen;
     }
-    void check_capacity() {
-        while (true) {
-            // exactly:
-            size_t databytes =
-                (32 + sizeof(BITSET)) * this->n + 8 * this->edges_cnt + (sizeof(BITSET) + 4) * this->seps_cnt;
-            if (databytes <= this->mem_lmt)
-                break;
+    // return erased length
+    size_t erase_static_memory(const size_t offset) {
+        hash_t h = static_memory[offset].to_ullong();
+        assert(sep_memo_mp.count(h));
+        assert(sep_memo_mp[h] == offset);
+        return this->erase_hash(h);
+    }
+    // static_memory_ptr will be automatically set to the offset
+    void static_memory_alloc(size_t n) {
+        if (static_memory_ptr + n >= static_memory.size()) {
+            static_memory_ptr = 0;
+        }
+        for (size_t i = static_memory_ptr; i < static_memory_ptr + n;) {
+            if (static_memory[i].none())
+                i++;
             else
-                this->erase(hash_lst.back());
+                i += erase_static_memory(i);
         }
     }
 
 public:
+    ~Sep_Dictionary() {
+        vector<hash_t> hs(this->sep_memo_mp.size());
+        size_t i = 0;
+        for (auto itr = sep_memo_mp.begin(); itr != sep_memo_mp.end(); ++itr) {
+            hs[i++] = itr->first;
+        }
+        for (const auto h : hs) {
+            this->erase_hash(h);
+        }
+    }
     // LRU policy
     void insert(const hash_t h, const int k, const BITSET& nodes, const ADJSPRS& adjsprs, const vector<BITSET>& seps) {
-        if (this->sep_memos.count(h)) {
-            this->erase(h);
+        if (this->sep_memo_mp.count(h)) {
+            this->erase_hash(h);
         }
-        this->hash_lst.push_front(h);
-        size_t adjsprs_size = adjsprs.capacity();
-        size_t seps_size = seps.capacity();
-        sep_memos[h] = {k, nodes, adjsprs, adjsprs_size, seps, seps_size, hash_lst.begin()};
-        n++;
-        edges_cnt += adjsprs_size;
-        seps_cnt += seps_size;
-        this->check_capacity();
+        size_t adjlen = adjsprs.size();
+        size_t seplen = seps.size();
+        size_t totallen = 5 + adjlen + seplen;
+        this->static_memory_alloc(totallen);
+        sep_memo_mp[h] = static_memory_ptr;
+        assert(h >= 1);
+        static_memory[static_memory_ptr++] = h;
+        static_memory[static_memory_ptr++] = k;
+        static_memory[static_memory_ptr++] = adjlen;
+        static_memory[static_memory_ptr++] = seplen;
+        static_memory[static_memory_ptr++] = nodes;
+        for (size_t i = 0; i < adjlen; ++i) {
+            static_memory[static_memory_ptr++] = adjsprs[i];
+        }
+        for (size_t i = 0; i < seplen; ++i) {
+            static_memory[static_memory_ptr++] = seps[i];
+        }
     }
-    sep_memo_t* access(const hash_t h) {
-        if (sep_memos.count(h)) {
-            this->hash_lst.erase(this->sep_memos[h].list_itr);
-            this->hash_lst.push_front(h);
-            this->sep_memos[h].list_itr = hash_lst.begin();
-            return &(this->sep_memos[h]);
+    // return offset
+    size_t access(const hash_t h) {
+        if (sep_memo_mp.count(h)) {
+            return sep_memo_mp[h];
         } else {
-            return nullptr;
+            return SIZE_MAX;
         }
     }
-    void reduce_memcapacity(size_t lmt_diff) {
-        this->mem_lmt -= lmt_diff;
-        this->check_capacity();
+    bool is_equal(const size_t offset, const BITSET& nodes, const ADJSPRS& adjsprs) {
+        if (static_memory[offset + 2].to_ullong() != adjsprs.size()) return false;
+        if (static_memory[offset + 4] != nodes) return false;
+        for (size_t i = 0; i < adjsprs.size(); ++i) {
+            if (static_memory[offset + 5 + i] != adjsprs[i]) return false;
+        }
+        return true;
+    }
+    size_t get_k(const size_t offset) { return static_memory[offset + 1].to_ullong(); }
+    // return [l, r)
+    std::pair<size_t, size_t> get_sep_range(const size_t offset) {
+        size_t adjlen = static_memory[offset + 2].to_ullong();
+        size_t seplen = static_memory[offset + 3].to_ullong();
+        return {offset + 5 + adjlen, offset + 5 + adjlen + seplen};
     }
 };
 
@@ -315,9 +371,7 @@ vector<BITSET> list_exact_slow(const Graph& g, int k) {
                 auto Cb = components_contain(g, Na, b);
                 A = components_contain(g, open_neighbors(g, Cb), a);
                 if (get_min(A) != a) continue;
-                for (auto& s : enum_rec(g, k, a, b, A, F, min_over, Cb)) {
-                    ret.push_back(s);
-                }
+                { enum_rec(ret, g, k, a, b, A, F, min_over, Cb); }
             }
         }
     }
@@ -333,21 +387,36 @@ bool is_separators(const Graph& g, const vector<BITSET>& seps) {
     return true;
 }
 
+// range = [l, r), return first value causing "t" in evalfunc that returns l->[f,...,f,t,...,t)->r
+// NOTE: if [f,...,f) then return r, if [l, r) = empty set then invalid use
+template <class val_t, class bsargv_t, class evalfunc_t>
+val_t upper_bsearch(val_t l, val_t r, const bsargv_t& v, evalfunc_t evalfunc) {
+    if (r - l == 1) {
+        if (evalfunc(l, v))
+            return l;
+        else
+            return r;
+    }
+    val_t m = (l + r) / 2;
+    if (evalfunc(m, v))
+        return upper_bsearch<val_t, bsargv_t>(l, m, v, evalfunc);
+    else
+        return upper_bsearch<val_t, bsargv_t>(m, r, v, evalfunc);
+}
+
 // list all minimal separators of size at most k
 vector<BITSET> list_exact(const Graph& g, int k) {
     vector<BITSET> ret;
     hash_t h = get_hash(g);
     ADJSPRS g_adjsprs = encodeADJ(g.adj);
-    auto sep_memo = sep_dictionary.access(h);
-    if (sep_memo != nullptr) {
-        if (sep_memo->nodes == g.nodes && sep_memo->adjsprs == g_adjsprs) {
-            if (k <= sep_memo->k) {
-                for (const auto& sep : sep_memo->seps) {
-                    if (sep.count() <= k)
-                        ret.push_back(sep);
-                    else
-                        break;
-                }
+    size_t memo_offset = sep_dictionary.access(h);
+    if (memo_offset != SIZE_MAX) {
+        if (sep_dictionary.is_equal(memo_offset, g.nodes, g_adjsprs)) {
+            if (size_t(k) <= sep_dictionary.get_k(memo_offset)) {
+                auto [l, r] = sep_dictionary.get_sep_range(memo_offset);
+                size_t m = upper_bsearch(l, r, static_memory, [&](auto i, const auto& a) { return a[i].count() > k; });
+                ret.resize(m - l);
+                std::copy(static_memory.begin() + l, static_memory.begin() + m, ret.begin());
                 return ret;
             }
         }
@@ -363,8 +432,10 @@ vector<BITSET> list_exact(const Graph& g, int k) {
                 auto Cb = components_contain(g, Na, b);
                 A = components_contain(g, open_neighbors(g, Cb), a);
                 if (get_min(A, &X) != a) continue;
-                for (auto& s : enum_rec(g, k, a, b, A, F, &X, Cb)) {
-                    ret.push_back(s);
+                {
+                    std::vector<BITSET> enum_buf;
+                    enum_rec(enum_buf, g, k, a, b, A, F, &X, Cb);
+                    vector_concat(ret, enum_buf);
                 }
             }
         }
@@ -373,8 +444,9 @@ vector<BITSET> list_exact(const Graph& g, int k) {
         if (conn.test(v)) continue;
         auto N = open_neighbors(g, conn);
         if (N.count() <= k) ret.push_back(N);
-        for (auto& s : list_exact(local(g, join(conn, X)), k)) {
-            ret.push_back(s);
+        {
+            auto enum_buf = list_exact(local(g, join(conn, X)), k);
+            vector_concat(ret, enum_buf);
         }
     }
     ret = unique(ret);
