@@ -21,7 +21,7 @@ public:
     int ub = INT_MAX;
     Graph* tree = nullptr;
     BITSET* sep = nullptr;
-    BITSET* simplicial = nullptr;  // either one of tree or sep or simplicial
+    vector<int> *simplicial = nullptr;  // either one of tree or sep or simplicial
     main_memo_t() {}
     ~main_memo_t() { this->erase_record(); }
     void register_sep(const BITSET& sep) {
@@ -32,9 +32,9 @@ public:
         this->erase_record();
         this->tree = new Graph(tree);
     }
-    void register_simplicial(const BITSET& simplicial) {
+    void register_simplicial(const vector<int>& simplicial) {
         this->erase_record();
-        this->simplicial = new BITSET(simplicial);
+        this->simplicial = new vector<int>(simplicial);
     }
 
 private:
@@ -85,11 +85,22 @@ Graph get_tree_from_main_memo(const Graph& g) {
         return decomp;
     }
     if (main_memo_ptr->simplicial != nullptr) {
-        assert(main_memo_ptr->simplicial->count());
-        Graph decomp = get_tree_from_main_memo(induced(g, difference(g.nodes, *(main_memo_ptr->simplicial))));
+        assert(main_memo_ptr->simplicial->size());
+        BITSET remained = g.nodes;
+        for (auto x : *(main_memo_ptr->simplicial)) {
+            remained.reset(x);
+        }
+        Graph decomp;
+        if (remained.any()) {
+            decomp = get_tree_from_main_memo(induced(g, remained));
+        }
+        else {
+            decomp = Graph(main_memo_ptr->simplicial->back());
+            main_memo_ptr->simplicial->pop_back();
+        }
         // for each v in simplicial nodes
-        for (auto v = main_memo_ptr->simplicial->_Find_first(); v < main_memo_ptr->simplicial->size();
-             v = main_memo_ptr->simplicial->_Find_next(v)) {
+        reverse(main_memo_ptr->simplicial->begin(), main_memo_ptr->simplicial->end());
+        for (auto v : *(main_memo_ptr->simplicial)) {
             // for each w adjacent to v, take target among those w s.t. placed in the deepest
             // since the adjacent vertices form a clique, they are on a path between the root to the deepst one
             // thus, just take the last node as the "target" in dfs order that is adjacent to v
@@ -111,7 +122,7 @@ Graph get_tree_from_main_memo(const Graph& g) {
     assert(false);
 }
 
-Graph remove_simplicial(const Graph& g, int k, BITSET& removed) {
+Graph remove_simplicial(const Graph& g, int k, vector<int>& removed) {
     Graph h(g);
     array<int, BITSET_MAX_SIZE> deg;
     stack<int> st;
@@ -144,7 +155,7 @@ Graph remove_simplicial(const Graph& g, int k, BITSET& removed) {
                 assert(deg[u] >= 0);
             }
             h.remove_node(v);
-            removed.set(v);
+            removed.push_back(v);
         }
     }
     return h;
@@ -174,10 +185,10 @@ bool solve(const Graph& g, int k, int use_block_size_max = 1e9, bool skip_simpli
 
     // simplicial rule
     if (!skip_simplicial_rule) {
-        BITSET simplicial = 0;
+        vector<int> simplicial;
         Graph next_g;
         next_g = remove_simplicial(g, k, simplicial);
-        if (simplicial.any()) {
+        if (simplicial.size()) {
             bool ok = solve(next_g, k, use_block_size_max, true);
             if (ok) {
                 main_memo_ptr->ub = min(main_memo_ptr->ub, k);
