@@ -114,14 +114,14 @@ Graph get_tree_from_main_memo(const Graph& g) {
 Graph remove_simplicial(const Graph& g, int k, BITSET& removed) {
     Graph h(g);
     array<int, BITSET_MAX_SIZE> deg;
-    queue<int> que;
+    stack<int> st;
     FOR_EACH(v, g.nodes) {
         deg[v] = at(g.adj, v).count();
-        que.push(v);
+        st.push(v);
     }
-    while (!que.empty()) {
-        int v = que.front();
-        que.pop();
+    while (!st.empty()) {
+        int v = st.top();
+        st.pop();
         if (!h.nodes.test(v)) continue;
         bool ok = true;
         FOR_EACH(u, at(h.adj, v)) {
@@ -139,7 +139,7 @@ Graph remove_simplicial(const Graph& g, int k, BITSET& removed) {
         }
         if (ok) {
             FOR_EACH(u, at(h.adj, v)) {
-                que.push(u);
+                st.push(u);
                 deg[u]--;
                 assert(deg[u] >= 0);
             }
