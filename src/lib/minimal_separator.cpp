@@ -413,7 +413,8 @@ vector<BITSET> list_exact(const Graph& g, int k) {
     if (memo_offset != SIZE_MAX) {
         if (sep_dictionary.is_equal(memo_offset, g.nodes, g_adjsprs)) {
             if (size_t(k) <= sep_dictionary.get_k(memo_offset)) {
-                auto [l, r] = sep_dictionary.get_sep_range(memo_offset);
+                size_t l, r;
+                tie(l, r) = sep_dictionary.get_sep_range(memo_offset);
                 size_t m = upper_bsearch(l, r, static_memory, [&](auto i, const auto& a) { return a[i].count() > k; });
                 ret.resize(m - l);
                 std::copy(static_memory.begin() + l, static_memory.begin() + m, ret.begin());
