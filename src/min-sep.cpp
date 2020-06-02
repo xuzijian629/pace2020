@@ -21,7 +21,7 @@ public:
     int ub = INT_MAX;
     Graph* tree = nullptr;
     BITSET* sep = nullptr;
-    BITSET* simplical = nullptr; // either one of tree or sep or simplical
+    BITSET* simplicial = nullptr;  // either one of tree or sep or simplicial
     main_memo_t() {}
     ~main_memo_t() { this->erase_record(); }
     void register_sep(const BITSET& sep) {
@@ -32,10 +32,11 @@ public:
         this->erase_record();
         this->tree = new Graph(tree);
     }
-    void register_simplical(const BITSET& simplical) {
+    void register_simplicial(const BITSET& simplicial) {
         this->erase_record();
-        this->simplical = new BITSET(simplical);
+        this->simplicial = new BITSET(simplicial);
     }
+
 private:
     void erase_record() {
         if (this->sep != nullptr) {
@@ -46,9 +47,9 @@ private:
             delete this->tree;
             this->tree = nullptr;
         }
-        if (this->simplical != nullptr) {
-            delete this->simplical;
-            this->simplical = nullptr;
+        if (this->simplicial != nullptr) {
+            delete this->simplicial;
+            this->simplicial = nullptr;
         }
     }
 };
@@ -63,7 +64,7 @@ Graph get_tree_from_main_memo(const Graph& g) {
     main_memo_t* main_memo_ptr;
     assert(main_memo.count(g.nodes));
     main_memo_ptr = &(main_memo[g.nodes]);
-    assert(!(main_memo_ptr->tree == nullptr && main_memo_ptr->sep == nullptr && main_memo_ptr->simplical == nullptr));
+    assert(!(main_memo_ptr->tree == nullptr && main_memo_ptr->sep == nullptr && main_memo_ptr->simplicial == nullptr));
     if (main_memo_ptr->tree != nullptr) {
         return *(main_memo_ptr->tree);
     }
@@ -83,16 +84,16 @@ Graph get_tree_from_main_memo(const Graph& g) {
         }
         return decomp;
     }
-    if (main_memo_ptr->simplical != nullptr) {
-        assert(main_memo_ptr->simplical->count());
-        Graph decomp = get_tree_from_main_memo(induced(g, *(main_memo_ptr->simplical)));
-        // for each v in simplical nodes
-        for (auto v = main_memo_ptr->simplical->_Find_first(); v < main_memo_ptr->simplical->size();
-             v = main_memo_ptr->simplical->_Find_next(v)) {
-            // for each w adjacent to v, take target among those w s.t. placed in the deepest 
+    if (main_memo_ptr->simplicial != nullptr) {
+        assert(main_memo_ptr->simplicial->count());
+        Graph decomp = get_tree_from_main_memo(induced(g, *(main_memo_ptr->simplicial)));
+        // for each v in simplicial nodes
+        for (auto v = main_memo_ptr->simplicial->_Find_first(); v < main_memo_ptr->simplicial->size();
+             v = main_memo_ptr->simplicial->_Find_next(v)) {
+            // for each w adjacent to v, take target among those w s.t. placed in the deepest
             // since the adjacent vertices form a clique, they are on a path between the root to the deepst one
             // thus, just take the last node as the "target" in dfs order that is adjacent to v
-            auto dfs = [&](auto& dfs, int w, int p, int &target) -> void {
+            auto dfs = [&](auto& dfs, int w, int p, int& target) -> void {
                 if (g.adj[v][w]) target = w;
                 FOR_EACH(s, at(decomp.adj, v)) {
                     if (s != p) {
@@ -110,9 +111,49 @@ Graph get_tree_from_main_memo(const Graph& g) {
     assert(false);
 }
 
+Graph remove_simplicial(const Graph& g, BITSET& removed) {
+    Graph h(g);
+    array<int, BITSET_MAX_SIZE> deg;
+    queue<int> que;
+    FOR_EACH(v, g.nodes) {
+        deg[v] = at(g.adj, v).count();
+        que.push(v);
+    }
+    vector<int> simplicials;
+    while (!que.empty()) {
+        int v = que.front();
+        que.pop();
+        if (!h.nodes.test(v)) continue;
+        bool ok = true;
+        FOR_EACH(u, at(h.adj, v)) {
+            if (deg[u] <= k) {
+                ok = false;
+                break;
+            }
+            FOR_EACH(w, at(h.adj, v)) {
+                if (u < w && !at(h.adj, u).test(w)) {
+                    ok = false;
+                    break;
+                }
+            }
+            if (!ok) break;
+        }
+        if (ok) {
+            FOR_EACH(u, at(h.adj, v)) {
+                que.push(u);
+                deg[u]--;
+                assert(deg[u] >= 0);
+            }
+            h.remove_node(v);
+            simplicials.push_back(v);
+        }
+    }
+    return h;
+}
+
 // return true if there is an answer, either the separator or the tree is guaranteed to be registered
 // if you want to get the graph, call get_tree_from_main_memo(g)
-bool solve(const Graph& g, int k, int use_block_size_max = 1e9, bool skip_simplical_rule = false) {
+bool solve(const Graph& g, int k, int use_block_size_max = 1e9, bool skip_simplicial_rule = false) {
     assert(k >= 1);
     if (g.n() == 1) return true;
 
@@ -132,22 +173,20 @@ bool solve(const Graph& g, int k, int use_block_size_max = 1e9, bool skip_simpli
         main_memo_ptr = &(main_memo[g.nodes]);
     }
 
-    // simplical rule
-    if (!skip_simplical_rule) {
-        BITSET simplical = 0;
+    // simplicial rule
+    if (!skip_simplicial_rule) {
+        BITSET simplicial = 0;
         Graph next_g;
-        // TODO: Suppose function: Graph remove_simplical(const Graph& g, BITSET& removed);
-        // next_g = remove_simplical(g, simplical);
-        if (simplical.any()) {
+        next_g = remove_simplicial(g, simplicial);
+        if (simplicial.any()) {
             bool ok = solve(next_g, k, use_block_size_max, true);
             if (ok) {
                 main_memo_ptr->ub = min(main_memo_ptr->ub, k);
-                main_memo_ptr->register_simplical(simplical);
+                main_memo_ptr->register_simplicial(simplicial);
                 return true;
-            }
-            else {
+            } else {
                 main_memo_ptr->lb = max(main_memo_ptr->lb, k + 1);
-                main_memo_ptr->register_simplical(simplical);
+                main_memo_ptr->register_simplicial(simplicial);
                 return false;
             }
         }
