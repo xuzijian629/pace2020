@@ -95,9 +95,9 @@ Graph get_tree_from_main_memo(const Graph& g) {
             // thus, just take the last node as the "target" in dfs order that is adjacent to v
             auto dfs = [&](auto& dfs, int w, int p, int& target) -> void {
                 if (g.adj[v][w]) target = w;
-                FOR_EACH(s, at(decomp.adj, v)) {
+                FOR_EACH(s, at(decomp.adj, w)) {
                     if (s != p) {
-                        dfs(dfs, s, v, target);
+                        dfs(dfs, s, w, target);
                     }
                 }
             };
@@ -119,6 +119,7 @@ Graph remove_simplicial(const Graph& g, int k, BITSET& removed) {
         deg[v] = at(g.adj, v).count();
         que.push(v);
     }
+    vector<int> simplicials;
     while (!que.empty()) {
         int v = que.front();
         que.pop();
@@ -144,7 +145,7 @@ Graph remove_simplicial(const Graph& g, int k, BITSET& removed) {
                 assert(deg[u] >= 0);
             }
             h.remove_node(v);
-            removed.set(v);
+            simplicials.push_back(v);
         }
     }
     return h;
