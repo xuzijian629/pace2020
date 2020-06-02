@@ -20,7 +20,8 @@ public:
     int lb = 0;
     int ub = INT_MAX;
     Graph* tree = nullptr;
-    BITSET* sep = nullptr;  // either one of tree or sep
+    BITSET* sep = nullptr;
+    BITSET* simplical = nullptr; // either one of tree or sep or simplical
     main_memo_t() {}
     ~main_memo_t() { this->erase_record(); }
     void register_sep(const BITSET& sep) {
@@ -31,7 +32,10 @@ public:
         this->erase_record();
         this->tree = new Graph(tree);
     }
-
+    void register_simplical(const BITSET& simplical) {
+        this->erase_record();
+        this->simplical = new BITSET(simplical);
+    }
 private:
     void erase_record() {
         if (this->sep != nullptr) {
@@ -41,6 +45,10 @@ private:
         if (this->tree != nullptr) {
             delete this->tree;
             this->tree = nullptr;
+        }
+        if (this->simplical != nullptr) {
+            delete this->simplical;
+            this->simplical = nullptr;
         }
     }
 };
@@ -55,7 +63,7 @@ Graph get_tree_from_main_memo(const Graph& g) {
     main_memo_t* main_memo_ptr;
     assert(main_memo.count(g.nodes));
     main_memo_ptr = &(main_memo[g.nodes]);
-    assert(!(main_memo_ptr->tree == nullptr && main_memo_ptr->sep == nullptr));
+    assert(!(main_memo_ptr->tree == nullptr && main_memo_ptr->sep == nullptr && main_memo_ptr->simplical));
     if (main_memo_ptr->tree != nullptr) {
         return *(main_memo_ptr->tree);
     }
@@ -75,12 +83,36 @@ Graph get_tree_from_main_memo(const Graph& g) {
         }
         return decomp;
     }
+    if (main_memo_ptr->simplical != nullptr) {
+        assert(main_memo_ptr->simplical->count());
+        Graph decomp = get_tree_from_main_memo(induced(g, *(main_memo_ptr->simplical)));
+        // for each v in simplical nodes
+        for (auto v = main_memo_ptr->simplical->_Find_first(); v < main_memo_ptr->simplical->size();
+             v = main_memo_ptr->simplical->_Find_next(v)) {
+            // for each w adjacent to v, take target among those w s.t. placed in the deepest 
+            // since the adjacent vertices form a clique, they are on a path between the root to the deepst one
+            // thus, just take the last node as the "target" in dfs order that is adjacent to v
+            auto dfs = [&](auto& dfs, int w, int p, int &target) -> void {
+                if (g.adj[v][w]) target = w;
+                FOR_EACH(s, at(decomp.adj, v)) {
+                    if (s != p) {
+                        dfs(dfs, s, v, target);
+                    }
+                }
+            };
+            int target = -1;
+            dfs(dfs, g.root, -1, target);
+            assert(target >= 0);
+            decomp.add_edge(target, v);
+        }
+        return decomp;
+    }
     assert(false);
 }
 
 // return true if there is an answer, either the separator or the tree is guaranteed to be registered
 // if you want to get the graph, call get_tree_from_main_memo(g)
-bool solve(const Graph& g, int k, int use_block_size_max = 1e9) {
+bool solve(const Graph& g, int k, int use_block_size_max = 1e9, bool skip_simplical_rule = false) {
     assert(k >= 1);
     if (g.n() == 1) return true;
 
@@ -98,6 +130,27 @@ bool solve(const Graph& g, int k, int use_block_size_max = 1e9) {
         }
     } else {
         main_memo_ptr = &(main_memo[g.nodes]);
+    }
+
+    // simplical rule
+    if (!skip_simplical_rule) {
+        BITSET simplical = 0;
+        Graph next_g;
+        // TODO: Suppose function: Graph remove_simplical(const Graph& g, BITSET& removed);
+        // next_g = remove_simplical(g, simplical);
+        if (simplical.any()) {
+            bool ok = solve(next_g, k, use_block_size_max, true);
+            if (ok) {
+                main_memo_ptr->ub = min(main_memo_ptr->ub, k);
+                main_memo_ptr->register_simplical(simplical);
+                return true;
+            }
+            else {
+                main_memo_ptr->lb = max(main_memo_ptr->lb, k + 1);
+                main_memo_ptr->register_simplical(simplical);
+                return false;
+            }
+        }
     }
 
     auto heuristic_decomp = treedepth_heuristic(g);
