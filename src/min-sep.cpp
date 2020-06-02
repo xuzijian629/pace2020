@@ -21,7 +21,7 @@ public:
     int ub = INT_MAX;
     Graph* tree = nullptr;
     BITSET* sep = nullptr;
-    vector<int> *simplicial = nullptr;  // either one of tree or sep or simplicial
+    vector<int>* simplicial = nullptr;  // either one of tree or sep or simplicial
     main_memo_t() {}
     ~main_memo_t() { this->erase_record(); }
     void register_sep(const BITSET& sep) {
@@ -93,8 +93,7 @@ Graph get_tree_from_main_memo(const Graph& g) {
         Graph decomp;
         if (remained.any()) {
             decomp = get_tree_from_main_memo(induced(g, remained));
-        }
-        else {
+        } else {
             decomp = Graph(main_memo_ptr->simplicial->back());
             main_memo_ptr->simplicial->pop_back();
         }
@@ -184,7 +183,7 @@ bool solve(const Graph& g, int k, int use_block_size_max = 1e9, bool skip_simpli
     }
 
     // simplicial rule
-    if (!skip_simplicial_rule) {
+    if (!skip_simplicial_rule && g.n() >= 50) {
         vector<int> simplicial;
         Graph next_g;
         next_g = remove_simplicial(g, k, simplicial);
