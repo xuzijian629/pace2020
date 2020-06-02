@@ -200,25 +200,6 @@ bool solve(const Graph& g, int k, int use_block_size_max = 1e9, bool skip_simpli
         return true;
     }
 
-    // apex vertex があれば選ぶ
-    FOR_EACH(v, g.nodes) {
-        if (at(g.adj, v).count() == g.n() - 1) {
-            BITSET rem;
-            rem.set(v);
-            BITSET s = rem;
-            for (auto& C : components(remove(g, rem))) {
-                bool ok = solve(induced(g, C), k - 1, use_block_size_max);
-                if (!ok) {
-                    main_memo_ptr->lb = max(main_memo_ptr->lb, k + 1);
-                    return false;
-                }
-            }
-            main_memo_ptr->ub = min(main_memo_ptr->ub, k);
-            main_memo_ptr->register_sep(s);
-            return true;
-        }
-    }
-
     // separator によって 分解される各連結成分の td は 1 以上
     // サイズ k - 1 までの separator を列挙すればいい
     auto seps = list_exact(g, min(k - 1, treewidth_ub(g)));
