@@ -7,7 +7,29 @@ using namespace std;
 #ifndef BITSET_MAX_SIZE
 #define BITSET_MAX_SIZE 500
 #endif
-using BITSET = bitset<BITSET_MAX_SIZE>;
+
+#if BITSET_MAX_SIZE <= 64
+    #define BITSET_ACTUAL_SIZE 64
+#elif BITSET_MAX_SIZE <= 128
+    #define BITSET_ACTUAL_SIZE 128
+#elif BITSET_MAX_SIZE <= 192
+    #define BITSET_ACTUAL_SIZE 192
+#elif BITSET_MAX_SIZE <= 256
+    #define BITSET_ACTUAL_SIZE 256
+#elif BITSET_MAX_SIZE <= 320
+    #define BITSET_ACTUAL_SIZE 320
+#elif BITSET_MAX_SIZE <= 384
+    #define BITSET_ACTUAL_SIZE 384
+#elif BITSET_MAX_SIZE <= 448
+    #define BITSET_ACTUAL_SIZE 448
+#elif BITSET_MAX_SIZE <= 512
+    #define BITSET_ACTUAL_SIZE 512
+#else
+    #define BITSET_ACTUAL_SIZE (((BITSET_MAX_SIZE - 1) / 64 + 1) * 64)
+#endif
+
+
+using BITSET = bitset<BITSET_ACTUAL_SIZE>;
 // using BITSET = Bitset;
 int MAX_NODE_SIZE;
 #define FOR_EACH(v, bs) for (int v = (bs)._Find_first(); v < (bs).size(); v = (bs)._Find_next(v))
@@ -16,16 +38,14 @@ int MAX_NODE_SIZE;
 using ADJ = array<BITSET, BITSET_MAX_SIZE>;
 // using ADJ = vector<BITSET>;
 
-#define _ADJ_MEMBYTES sizeof(BITSET) * BITSET_MAX_SIZE
-
 // sparse ADJ
-using ADJSPRS = vector<unsigned long long>;
+using ADJSPRS = vector<BITSET>;
 #if BITSET_MAX_SIZE <= 256
-#define _ADJSPRS_CEILLOG_N 8  // 4 edges per ull value
-#define _ADJSPRS_MAX_SFT 64
+#define _ADJSPRS_CEILLOG_N 8
+#define _ADJSPRS_MAX_SFT (BITSET_ACTUAL_SIZE / 16 * 16)
 #else
-#define _ADJSPRS_CEILLOG_N 10  // 3 edges per ull value
-#define _ADJSPRS_MAX_SFT 60
+#define _ADJSPRS_CEILLOG_N 10
+#define _ADJSPRS_MAX_SFT (BITSET_ACTUAL_SIZE / 20 * 20)
 #endif
 
 #define at(adj, i) adj[i]
@@ -196,9 +216,9 @@ ADJSPRS encodeADJ(const ADJ& adj) {
                 adjsprs.push_back(0);
                 sft = 0;
             }
-            adjsprs.back() |= (i << sft);
+            adjsprs.back() |= (static_cast<BITSET>(i) << sft);
             sft += _ADJSPRS_CEILLOG_N;
-            adjsprs.back() |= (j << sft);
+            adjsprs.back() |= (static_cast<BITSET>(j) << sft);
             sft += _ADJSPRS_CEILLOG_N;
         }
     }
