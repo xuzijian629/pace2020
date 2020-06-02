@@ -119,7 +119,6 @@ Graph remove_simplicial(const Graph& g, int k, BITSET& removed) {
         deg[v] = at(g.adj, v).count();
         que.push(v);
     }
-    vector<int> simplicials;
     while (!que.empty()) {
         int v = que.front();
         que.pop();
@@ -145,7 +144,7 @@ Graph remove_simplicial(const Graph& g, int k, BITSET& removed) {
                 assert(deg[u] >= 0);
             }
             h.remove_node(v);
-            simplicials.push_back(v);
+            removed.set(v);
         }
     }
     return h;
