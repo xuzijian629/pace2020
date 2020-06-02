@@ -292,7 +292,6 @@ private:
     void static_memory_alloc(size_t n) {
         if (static_memory_ptr + n >= static_memory.size()) {
             static_memory_ptr = 0;
-            std::cerr << "reset" << std::endl;
         }
         for (size_t i = static_memory_ptr; i < static_memory_ptr + n;) {
             if (static_memory[i].none()) i++;
