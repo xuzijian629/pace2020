@@ -183,7 +183,7 @@ bool solve(const Graph& g, int k, int use_block_size_max = 1e9, bool skip_simpli
     }
 
     // simplicial rule
-    if (!skip_simplicial_rule && g.n() >= 50) {
+    if (!skip_simplicial_rule && k >= 5) {
         vector<int> simplicial;
         Graph next_g;
         next_g = remove_simplicial(g, k, simplicial);
