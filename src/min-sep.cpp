@@ -21,8 +21,7 @@ public:
     int ub = INT_MAX;
     Graph* tree = nullptr;
     BITSET* sep = nullptr;  // either one of tree or sep
-    main_memo_t() {
-    }
+    main_memo_t() {}
     ~main_memo_t() { this->erase_record(); }
     void register_sep(const BITSET& sep) {
         this->erase_record();

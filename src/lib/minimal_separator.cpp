@@ -179,8 +179,8 @@ void vector_concat(std::vector<T>& a, std::vector<T>& b) {
 }
 
 constexpr int r_prune = 5;
-void enum_rec(vector<BITSET> &ret, const Graph& g, int k, int a, int b, const BITSET& A, const BITSET& F, BITSET* min_over,
-                        const BITSET& Cb) {
+void enum_rec(vector<BITSET>& ret, const Graph& g, int k, int a, int b, const BITSET& A, const BITSET& F,
+              BITSET* min_over, const BITSET& Cb) {
     // min_over = nullptr は、全体集合の代わり（毎回全体集合を指定すると重いので）
     if (F.count() > k) return;
     auto Na = open_neighbors(g, A);
@@ -191,8 +191,7 @@ void enum_rec(vector<BITSET> &ret, const Graph& g, int k, int a, int b, const BI
         if (b == get_min(Cb, min_over)) {
             ret.push_back(Na);
             return;
-        }
-        else
+        } else
             return;
     }
 
@@ -214,7 +213,7 @@ void enum_rec(vector<BITSET> &ret, const Graph& g, int k, int a, int b, const BI
     auto F_(F);
     F_.set(v);
     //
-    enum_rec(ret, g, k, a, b, A, F_, min_over, Cb); 
+    enum_rec(ret, g, k, a, b, A, F_, min_over, Cb);
     //
     bool can_cut = (min_over ? (*min_over).test(v) && v < a : v < a);
     if (!can_cut) {
@@ -222,7 +221,7 @@ void enum_rec(vector<BITSET> &ret, const Graph& g, int k, int a, int b, const BI
         auto A_ = compute_A_(g, A, b, v, &nxtCb);
         if (A_.any()) {
             //
-            enum_rec(ret, g, k, a, b, A_, F, min_over, nxtCb); 
+            enum_rec(ret, g, k, a, b, A_, F, min_over, nxtCb);
             //
         }
     }
@@ -256,7 +255,7 @@ Graph local(const Graph& g, const BITSET& C) {
 // total: (adjlen + seplen + 5) * sizeof(BITSET) bytes
 //====================================================
 #ifndef _MY_STATIC_MEMBYTE
-#define _MY_STATIC_MEMBYTE 7516192768 // 7GB for seps
+#define _MY_STATIC_MEMBYTE 7516192768  // 7GB for seps
 #endif
 #define _MY_STATIC_MEMSIZE (_MY_STATIC_MEMBYTE / sizeof(BITSET))
 std::vector<BITSET> static_memory(_MY_STATIC_MEMSIZE);
@@ -264,10 +263,8 @@ size_t static_memory_ptr = 0;
 
 // use as static class
 class Sep_Dictionary {
-
 private:
-
-    unordered_map<hash_t, size_t> sep_memo_mp; // hash is 1-indexed, static_memory[sep_memo_mp[h]] == h
+    unordered_map<hash_t, size_t> sep_memo_mp;  // hash is 1-indexed, static_memory[sep_memo_mp[h]] == h
     // return erased length
     size_t erase_hash(const hash_t h) {
         size_t offset = sep_memo_mp[h];
@@ -294,10 +291,13 @@ private:
             static_memory_ptr = 0;
         }
         for (size_t i = static_memory_ptr; i < static_memory_ptr + n;) {
-            if (static_memory[i].none()) i++;
-            else i += erase_static_memory(i);
+            if (static_memory[i].none())
+                i++;
+            else
+                i += erase_static_memory(i);
         }
     }
+
 public:
     ~Sep_Dictionary() {
         vector<hash_t> hs(this->sep_memo_mp.size());
@@ -340,7 +340,7 @@ public:
             return SIZE_MAX;
         }
     }
-    bool is_equal(const size_t offset, const BITSET &nodes, const ADJSPRS &adjsprs) {
+    bool is_equal(const size_t offset, const BITSET& nodes, const ADJSPRS& adjsprs) {
         if (static_memory[offset + 2].to_ullong() != adjsprs.size()) return false;
         if (static_memory[offset + 4] != nodes) return false;
         for (size_t i = 0; i < adjsprs.size(); ++i) {
@@ -348,14 +348,12 @@ public:
         }
         return true;
     }
-    size_t get_k(const size_t offset) {
-        return static_memory[offset + 1].to_ullong();
-    }
+    size_t get_k(const size_t offset) { return static_memory[offset + 1].to_ullong(); }
     // return [l, r)
     std::pair<size_t, size_t> get_sep_range(const size_t offset) {
         size_t adjlen = static_memory[offset + 2].to_ullong();
         size_t seplen = static_memory[offset + 3].to_ullong();
-        return { offset + 5 + adjlen, offset + 5 + adjlen + seplen };
+        return {offset + 5 + adjlen, offset + 5 + adjlen + seplen};
     }
 };
 
@@ -373,9 +371,7 @@ vector<BITSET> list_exact_slow(const Graph& g, int k) {
                 auto Cb = components_contain(g, Na, b);
                 A = components_contain(g, open_neighbors(g, Cb), a);
                 if (get_min(A) != a) continue;
-                {
-                    enum_rec(ret, g, k, a, b, A, F, min_over, Cb);
-                }
+                { enum_rec(ret, g, k, a, b, A, F, min_over, Cb); }
             }
         }
     }
