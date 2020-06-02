@@ -86,7 +86,7 @@ Graph get_tree_from_main_memo(const Graph& g) {
     }
     if (main_memo_ptr->simplicial != nullptr) {
         assert(main_memo_ptr->simplicial->count());
-        Graph decomp = get_tree_from_main_memo(induced(g, *(main_memo_ptr->simplicial)));
+        Graph decomp = get_tree_from_main_memo(induced(g, difference(g.nodes, *(main_memo_ptr->simplicial))));
         // for each v in simplicial nodes
         for (auto v = main_memo_ptr->simplicial->_Find_first(); v < main_memo_ptr->simplicial->size();
              v = main_memo_ptr->simplicial->_Find_next(v)) {
@@ -102,7 +102,7 @@ Graph get_tree_from_main_memo(const Graph& g) {
                 }
             };
             int target = -1;
-            dfs(dfs, g.root, -1, target);
+            dfs(dfs, decomp.root, -1, target);
             assert(target >= 0);
             decomp.add_edge(target, v);
         }
@@ -185,7 +185,6 @@ bool solve(const Graph& g, int k, int use_block_size_max = 1e9, bool skip_simpli
                 return true;
             } else {
                 main_memo_ptr->lb = max(main_memo_ptr->lb, k + 1);
-                main_memo_ptr->register_simplicial(simplicial);
                 return false;
             }
         }
