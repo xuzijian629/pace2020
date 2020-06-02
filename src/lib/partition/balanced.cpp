@@ -41,6 +41,7 @@ void decompose(const Graph& g, int min_n, int max_n) {
 bool is_connected(const Graph& g) { return components(g).size() == 1; }
 
 void gen_blocks(const Graph& g, int nax, int tl) {
+    if (nax < 10) return;
     while (tl > 0) {
         auto start = chrono::steady_clock::now();
         for (int max_n = 5; max_n <= nax; max_n++) {
