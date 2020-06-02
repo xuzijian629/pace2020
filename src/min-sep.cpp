@@ -111,7 +111,7 @@ Graph get_tree_from_main_memo(const Graph& g) {
     assert(false);
 }
 
-Graph remove_simplicial(const Graph& g, BITSET& removed) {
+Graph remove_simplicial(const Graph& g, int k, BITSET& removed) {
     Graph h(g);
     array<int, BITSET_MAX_SIZE> deg;
     queue<int> que;
@@ -177,7 +177,7 @@ bool solve(const Graph& g, int k, int use_block_size_max = 1e9, bool skip_simpli
     if (!skip_simplicial_rule) {
         BITSET simplicial = 0;
         Graph next_g;
-        next_g = remove_simplicial(g, simplicial);
+        next_g = remove_simplicial(g, k, simplicial);
         if (simplicial.any()) {
             bool ok = solve(next_g, k, use_block_size_max, true);
             if (ok) {
