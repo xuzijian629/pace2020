@@ -22,30 +22,24 @@ public:
     Graph* tree = nullptr;
     BITSET* sep = nullptr;  // either one of tree or sep
     main_memo_t() {
-        // entry とは別にまた sizeof(BITSET) 分あるらしい
-        sep_dictionary.change_memcapacity((sizeof(BITSET) << 1) + sizeof(main_memo_t), Sep_Dictionary::op_t::SUB);
     }
     ~main_memo_t() { this->erase_record(); }
     void register_sep(const BITSET& sep) {
         this->erase_record();
-        sep_dictionary.change_memcapacity(sizeof(BITSET), Sep_Dictionary::op_t::SUB);
         this->sep = new BITSET(sep);
     }
     void register_tree(const Graph& tree) {
         this->erase_record();
-        sep_dictionary.change_memcapacity(sizeof(Graph), Sep_Dictionary::op_t::SUB);
         this->tree = new Graph(tree);
     }
 
 private:
     void erase_record() {
         if (this->sep != nullptr) {
-            sep_dictionary.change_memcapacity(sizeof(BITSET), Sep_Dictionary::op_t::ADD);
             delete this->sep;
             this->sep = nullptr;
         }
         if (this->tree != nullptr) {
-            sep_dictionary.change_memcapacity(sizeof(Graph), Sep_Dictionary::op_t::ADD);
             delete this->tree;
             this->tree = nullptr;
         }
@@ -213,7 +207,7 @@ int main() {
     auto finish = chrono::steady_clock::now();
     cerr << "init finished: " << chrono::duration_cast<chrono::milliseconds>(finish - start).count() << " [msec]"
          << endl;
-    main_memo.clear();
-    sep_dictionary = Sep_Dictionary();
+    // main_memo.clear();
+    // sep_dictionary = Sep_Dictionary();
     print_decomp(treedepth_decomp(g));
 }
