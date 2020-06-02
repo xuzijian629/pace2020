@@ -63,7 +63,7 @@ Graph get_tree_from_main_memo(const Graph& g) {
     main_memo_t* main_memo_ptr;
     assert(main_memo.count(g.nodes));
     main_memo_ptr = &(main_memo[g.nodes]);
-    assert(!(main_memo_ptr->tree == nullptr && main_memo_ptr->sep == nullptr && main_memo_ptr->simplical));
+    assert(!(main_memo_ptr->tree == nullptr && main_memo_ptr->sep == nullptr && main_memo_ptr->simplical == nullptr));
     if (main_memo_ptr->tree != nullptr) {
         return *(main_memo_ptr->tree);
     }
