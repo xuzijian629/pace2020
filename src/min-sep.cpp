@@ -259,7 +259,7 @@ bool solve(const Graph& g, int k, int use_block_size_max = 1e9, bool skip_simpli
         }
         if (!ok) continue;
         for (auto& C : comps) {
-            ok = solve(induced(g, C), k - s.count(), use_block_size_max);
+            ok = solve(induced(g, C), k - s.count(), use_block_size_max, skip_simplicial_rule);
             if (!ok) break;
         }
         if (!ok) continue;
