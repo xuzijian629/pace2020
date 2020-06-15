@@ -5,7 +5,8 @@ Authors: Zijian Xu, Dejun Mao and Vorapong Suppakitpaisarn from The University o
 
 # Algorithm
 We enumerate minimal separtors to construct treedepth decomposition in a top-down way. A quite effective pruning is done by computing exact treedepth of many small components throughout the input graph.
-A detailed explanation will be given soon.
+## Solver description
+A detailed explanation of our algorithm is provided [here](https://github.com/xuzijian629/pace2020/blob/master/submissions/solver-description-xuzijian629.pdf).
 
 # Installation
 - GCC version 5.4.0 or later
