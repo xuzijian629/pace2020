@@ -3,6 +3,8 @@ This repository contains solvers for treedepth, submitted from team xuzijian629 
 
 Authors: Zijian Xu, Dejun Mao and Vorapong Suppakitpaisarn from The University of Tokyo
 
+UPD: We were ranked in [5th place](https://pacechallenge.org/2020/results/) in the competition.
+
 # Algorithm
 We enumerate minimal separtors to construct treedepth decomposition in a top-down way. A quite effective pruning is done by computing exact treedepth of many small components throughout the input graph.
 ## Solver description
