@@ -9,6 +9,8 @@ UPD2: The official solver description is published at https://drops.dagstuhl.de/
 
 UPD3: The conjecture used in the algorithm is resolved and the submitted solver is proved to be inexact. See https://arxiv.org/abs/2008.09822 for details.
 
+UPD4: The slides presented at IPEC is [available](https://github.com/xuzijian629/pace2020/blob/master/IPEC.pdf).
+
 # Algorithm
 We enumerate minimal separtors to construct treedepth decomposition in a top-down way. A quite effective pruning is done by computing exact treedepth of many small components throughout the input graph.
 ## Solver description
